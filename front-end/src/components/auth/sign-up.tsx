@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { signupSchema, type SignupInput } from '@/lib/zod/auth.Schema'
+import { signupSchema, type SignupInput } from '@/lib/zod/auth/auth.Schema'
 import { signUpUser, googleSignIn } from '@/lib/api/auth.api'
 import toast from 'react-hot-toast'
 import Image from 'next/image'

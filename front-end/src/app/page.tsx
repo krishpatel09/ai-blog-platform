@@ -12,7 +12,7 @@ export default function Home() {
             src="/WriteGen.svg"
             alt="WriteGen AI Logo"
             width={160}
-            height={60}
+            height={60} 
             className="mix-blend-multiply dark:mix-blend-screen"
             priority
           />

@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/supabaseClient"
-import type { SignupInput, LoginInput } from "@/lib/zod/auth.Schema"
+import type { SignupInput, LoginInput } from "@/lib/zod/auth/auth.Schema"
 
 export interface AuthResult {
   success: boolean
