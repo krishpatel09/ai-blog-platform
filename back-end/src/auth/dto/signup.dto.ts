@@ -23,12 +23,6 @@ export class SignupDto {
   @MinLength(6, {
     message: 'Password too short',
   })
-  @MaxLength(20, {
-    message: 'Password too long',
-  })
-  // @Matches(/((?=.*\d)|(?=.*\W+))(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/, {
-  //   message: 'Password too weak',
-  // })
   @IsNotEmpty({
     message: 'Password is required',
   })

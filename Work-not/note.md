@@ -1,21 +1,21 @@
+@ -0,0 +1,22 @@
 # 📝 Blog Platform (NestJS Learning Project)
-## 🚀 Tech Stack
 
-### Frontend
+## 🚀 Technology Stack
+
+### 🎨 Frontend
 - Next.js
-- TypeScript
-- Tailwind CSS
+- TypeScrip
+- Material UI (MUI)
 
-### Backend
+### ⚙️ Backend
 - NestJS
-- Node.js
-- REST APIs
+- REST APIs  
 
-### Database
-- PostgreSQL (SQL / Relational Database)
-supabase
-mongodb
-
-### ORM
+### 🧠 ORM
 - Prisma ORM
 
+### 🗄️ Database
+- MySQL
+### 🔐 Authentication
+- Clerk

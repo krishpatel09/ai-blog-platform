@@ -1,17 +1,7 @@
-import {
-  Controller,
-  Post,
-  Get,
-  Body,
-  UseGuards,
-  Headers,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Controller, Post, Body } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtGuard } from '../common/guards/jwt.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -19,28 +9,13 @@ export class AuthController {
 
   @Post('signup')
   async signup(@Body() signupDto: SignupDto) {
-    return this.authService.signup(signupDto);
+    const result = await this.authService.signup(signupDto);
+    return result;
   }
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
-  }
-
-  @Get('me')
-  @UseGuards(JwtGuard)
-  async getMe(
-    @CurrentUser() user: { id: string },
-    @Headers('authorization') authHeader: string,
-  ) {
-    const token = authHeader?.startsWith('Bearer ')
-      ? authHeader.substring(7)
-      : null;
-
-    if (!token) {
-      throw new UnauthorizedException('Token not found');
-    }
-
-    return this.authService.getCurrentUser(user.id, token);
+    const result = await this.authService.login(loginDto);
+    return result;
   }
 }

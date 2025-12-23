@@ -1,7 +1,7 @@
 # Authentication System - Folder Structure & Flow
 
 ## 📁 Complete Folder Structure
-
+https://github.com/anilahir/nestjs-authentication-and-authorization/blob/main/.env.example
 ```
 back-end/
 └── src/
