@@ -5,12 +5,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { ConfigService } from '@nestjs/config';
 import { Request } from 'express';
 import { Observable } from 'rxjs';
 
 interface RequestWithUser extends Request {
   user?: {
-    userId: string;
+    userId: number;
     username: string;
     email: string;
   };
@@ -18,7 +19,10 @@ interface RequestWithUser extends Request {
 
 @Injectable()
 export class AuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService,
+  ) {}
 
   canActivate(
     context: ExecutionContext,
@@ -27,7 +31,7 @@ export class AuthGuard implements CanActivate {
     const authHeader = req.headers?.authorization;
 
     if (!authHeader || typeof authHeader !== 'string') {
-      throw new UnauthorizedException('Token not found');
+      throw new UnauthorizedException('Access token not found');
     }
 
     // Extract Bearer token
@@ -36,19 +40,28 @@ export class AuthGuard implements CanActivate {
       : authHeader;
 
     if (!token) {
-      throw new UnauthorizedException('Token not found');
+      throw new UnauthorizedException('Access token not found');
     }
 
     try {
+      const secret = this.configService.get<string>('JWT_SECRET');
+      if (!secret) {
+        throw new Error('JWT_SECRET environment variable is required.');
+      }
+      // Verify access token
       const decoded = this.jwtService.verify<{
-        userId: string;
+        userId: number;
         username: string;
         email: string;
-      }>(token);
+      }>(token, {
+        secret,
+      });
+
       req.user = decoded;
       return true;
     } catch {
-      throw new UnauthorizedException('Invalid token');
+      // Token expired or invalid
+      throw new UnauthorizedException('Invalid or expired access token');
     }
   }
 }

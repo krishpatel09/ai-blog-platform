@@ -1,68 +1,101 @@
-src/
+ai-blog-platform/
 │
-├── main.ts
-├── app.module.ts
+├── back-end/                    # NestJS Backend
+│   ├── src/
+│   │   ├── main.ts
+│   │   ├── app.module.ts
+│   │   ├── app.controller.ts
+│   │   ├── app.service.ts
+│   │   │
+│   │   ├── auth/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── auth.service.ts
+│   │   │   ├── auth.module.ts
+│   │   │   ├── auth.guard.ts
+│   │   │   ├── dto/
+│   │   │   │   ├── login.dto.ts
+│   │   │   │   └── signup.dto.ts
+│   │   │   └── interfaces/
+│   │   │       └── auth.interface.ts
+│   │   │
+│   │   ├── prisma/
+│   │   │   ├── prisma.module.ts
+│   │   │   ├── prisma.service.ts
+│   │   │   └── prisma.service.spec.ts
+│   │   │
+│   │   └── common/
+│   │       ├── config/
+│   │       │   ├── app.config.ts
+│   │       │   ├── jwt.config.ts
+│   │       │   └── supabase.config.ts
+│   │       ├── decorators/
+│   │       │   └── current-user.decorator.ts
+│   │       ├── interface/
+│   │       │   └── user.interface.ts
+│   │       ├── constants/        (empty)
+│   │       ├── interceptors/     (empty)
+│   │       └── validations/       (empty)
+│   │
+│   ├── prisma/
+│   │   ├── schema.prisma
+│   │   └── migrations/
+│   │
+│   ├── test/
+│   │   ├── app.e2e-spec.ts
+│   │   └── jest-e2e.json
+│   │
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── nest-cli.json
+│   ├── prisma.config.ts
+│   └── README.md
 │
-├── auth/
-│   ├── auth.controller.ts
-│   ├── auth.service.ts
-│   ├── auth.module.ts
-│   └── dto/
-│       ├── login.dto.ts
-│       └── signup.dto.ts
+├── front-end/                   # Next.js Frontend
+│   ├── src/
+│   │   ├── app/                 # Next.js App Router
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx
+│   │   │   ├── globals.css
+│   │   │   ├── favicon.ico
+│   │   │   ├── auth/
+│   │   │   │   ├── callback/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   ├── sign-in/
+│   │   │   │   │   └── page.tsx
+│   │   │   │   └── sign-up/
+│   │   │   │       └── page.tsx
+│   │   │
+│   │   ├── components/
+│   │   │   └── auth/
+│   │   │       ├── sign-in.tsx
+│   │   │       └── sign-up.tsx
+│   │   │
+│   │   ├── lib/
+│   │   │   ├── api/
+│   │   │   │   └── auth.api.ts
+│   │   │   ├── supabase/
+│   │   │   │   └── supabaseClient.ts
+│   │   │   └── zod/
+│   │   │       └── auth/
+│   │   │           └── auth.Schema.ts
+│   │   │
+│   │   └── types/
+│   │       └── index.ts
+│   │
+│   ├── public/
+│   │   ├── WriteGen.png
+│   │   ├── WriteGen.svg
+│   │   └── ... (other assets)
+│   │
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── next.config.ts
+│   └── README.md
 │
-├── users/
-│   ├── users.controller.ts
-│   ├── users.service.ts
-│   ├── users.module.ts
+├── Work-not/
+│   ├── folder structure.md
+│   ├── folder structure2.md
+│   └── note.md
 │
-├── posts/
-│   ├── posts.controller.ts
-│   ├── posts.service.ts
-│   ├── posts.module.ts
-│   └── dto/
-│       ├── create-post.dto.ts
-│       └── update-post.dto.ts
-│
-├── entities/
-│   ├── user.entity.ts
-│   └── post.entity.ts
-│
-├── database/
-│   └── database.module.ts
-│
-├── common/
-│   ├── config/
-│   │   ├── app.config.ts
-│   │   ├── jwt.config.ts
-│   │   └── database.config.ts
-│   │
-│   ├── constants/ (optional)
-│   │   ├── app.constants.ts
-│   │   └── roles.constants.ts
-│   │
-│   ├── decorators/
-│   │   └── current-user.decorator.ts
-│   │
-│   ├── enums/(optional)
-│   │   └── role.enum.ts
-│   │
-│   ├── interceptors/
-│   │   └── response.interceptor.ts
-│   │
-│   └── validations/
-│   │   └── password.validation.ts
-│   ├── database/
-│   │   └── database.module.ts
-│   │
-│   ├── entities/
-│   │   └── user.entity.ts
-│   │   └── post.entity.ts
-│   │
-│   ├── guards/
-│       └── auth.guard.ts
-
-
-
-
-
+├── package.json
+└── README.md

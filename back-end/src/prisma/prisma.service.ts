@@ -7,14 +7,15 @@ import { createPool, Pool, PoolConfig } from 'mariadb';
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy {
+  implements OnModuleInit, OnModuleDestroy
+{
   private mysqlConnectionPool: Pool;
 
   constructor(config: ConfigService) {
     const databaseUrl = config.get<string>('DATABASE_URL');
 
     if (!databaseUrl || databaseUrl.trim() === '') {
-      throw new Error('DATABASE_URL is required in environment variables');
+      throw new Error('DATABASE_URL is required');
     }
 
     const url = new URL(databaseUrl);
