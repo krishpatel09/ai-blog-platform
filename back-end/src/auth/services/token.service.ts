@@ -1,16 +1,54 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  OnModuleInit,
+  OnModuleDestroy,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
-import { CacheService } from 'src/cache/cache.service';
 import * as crypto from 'crypto';
 
+interface BlacklistedToken {
+  token: string;
+  userId: number;
+  expiresAt: Date;
+  reason?: string;
+}
+
 @Injectable()
-export class TokenService {
+export class TokenService implements OnModuleInit, OnModuleDestroy {
+  private blacklistedTokens: Map<string, BlacklistedToken> = new Map();
+  private cleanupInterval: NodeJS.Timeout;
+
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-    private readonly cacheService: CacheService,
   ) {}
+
+  onModuleInit() {
+    // Cleanup expired tokens every 5 minutes
+    this.cleanupInterval = setInterval(
+      () => {
+        this.cleanupExpiredBlacklistedTokens();
+      },
+      5 * 60 * 1000,
+    );
+  }
+
+  onModuleDestroy() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+    }
+  }
+
+  private cleanupExpiredBlacklistedTokens(): void {
+    const now = new Date();
+    for (const [token, data] of this.blacklistedTokens.entries()) {
+      if (data.expiresAt < now) {
+        this.blacklistedTokens.delete(token);
+      }
+    }
+  }
 
   generateAccessToken(payload: {
     userId: number;
@@ -104,16 +142,50 @@ export class TokenService {
     token: string,
     userId: number,
     expiresInSeconds: number,
+    reason?: string,
   ): Promise<void> {
-    await this.cacheService.blacklistToken(
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+    this.blacklistedTokens.set(token, {
       token,
       userId,
-      expiresInSeconds,
-      'Logout',
-    );
+      expiresAt,
+      reason: reason || 'Logout',
+    });
+    return Promise.resolve();
   }
 
   async isTokenBlacklisted(token: string): Promise<boolean> {
-    return await this.cacheService.isTokenBlacklisted(token);
+    const blacklisted = this.blacklistedTokens.get(token);
+    if (!blacklisted) {
+      return Promise.resolve(false);
+    }
+
+    // Check if expired
+    if (blacklisted.expiresAt < new Date()) {
+      this.blacklistedTokens.delete(token);
+      return Promise.resolve(false);
+    }
+
+    return Promise.resolve(true);
+  }
+
+  async removeBlacklistedToken(token: string): Promise<void> {
+    this.blacklistedTokens.delete(token);
+    return Promise.resolve();
+  }
+
+  async blacklistAllUserTokens(
+    userId: number,
+    expiresInSeconds: number,
+  ): Promise<void> {
+    const expiresAt = new Date(Date.now() + expiresInSeconds * 1000);
+    // Store a pattern for all user tokens
+    this.blacklistedTokens.set(`user:${userId}:*`, {
+      token: `user:${userId}:*`,
+      userId,
+      expiresAt,
+      reason: 'All sessions revoked',
+    });
+    return Promise.resolve();
   }
 }

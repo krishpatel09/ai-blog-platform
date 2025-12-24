@@ -8,7 +8,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './services/token.service';
 import { EmailService } from './services/email.service';
 import { AuditService } from './services/audit.service';
-// import { CacheService } from '../cache/cache.service';
 import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import * as bcrypt from 'bcrypt';
@@ -29,6 +28,7 @@ export class AuthService {
   async signin(signinDto: SigninDto, ipAddress?: string, userAgent?: string) {
     const { email, password } = signinDto;
 
+    console.log('signinDto', signinDto);
     try {
       const user = await this.prisma.user.findFirst({
         where: { email },

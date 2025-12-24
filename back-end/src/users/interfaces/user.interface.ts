@@ -1,8 +1,6 @@
-export interface CurrentUser
-{
-    id: number;
-    username: string;
-    email: string;
-    emailVerified: boolean;
-    role?: 'admin' | 'user';
+export interface CurrentUser {
+  id: number;
+  username: string;
+  email: string;
+  emailVerified: boolean;
 }
