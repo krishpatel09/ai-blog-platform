@@ -3,6 +3,7 @@ export interface CurrentUserType {
   id: number;
   username: string;
   email: string;
+  emailVerified: boolean;
 }
 
 export const CurrentUser = createParamDecorator(
@@ -11,3 +12,9 @@ export const CurrentUser = createParamDecorator(
     return request.user;
   },
 );
+
+// Use case
+// @Get('me')
+// getProfile(@CurrentUser() user: CurrentUserType) {
+//   return user;
+// }

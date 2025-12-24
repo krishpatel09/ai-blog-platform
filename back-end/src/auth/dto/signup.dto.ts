@@ -4,15 +4,12 @@ import {
   IsNotEmpty,
   MaxLength,
   MinLength,
-  // Matches,
 } from 'class-validator';
 
 export class SignupDto {
+  @IsNotEmpty()
   @IsString()
-  @IsNotEmpty({
-    message: 'Username is required',
-  })
-  @MaxLength(20)
+  @MinLength(3, { message: 'Username must be at least 3 characters long' })
   username: string;
 
   @IsEmail()
@@ -20,11 +17,12 @@ export class SignupDto {
   @MaxLength(255)
   readonly email: string;
 
-  @MinLength(6, {
-    message: 'Password too short',
-  })
   @IsNotEmpty({
     message: 'Password is required',
+  })
+  @IsString()
+  @MinLength(6, {
+    message: 'Password too short',
   })
   password: string;
 }
