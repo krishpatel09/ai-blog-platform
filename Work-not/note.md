@@ -16,6 +16,6 @@
 - Prisma ORM
 
 ### 🗄️ Database
-- MySQL/neon
+-   neon
 ### 🔐 Authentication
 - Clerk

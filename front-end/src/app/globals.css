@@ -1,26 +1,35 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --radius: 0.5rem;
+
+  /* Blogane Theme Variables */
+  --color-blogane-yellow: #F59E0B;
+  --color-blogane-dark: #0F172A;
+  --color-blogane-light: #FFFFFF;
+  --color-blogane-gray: #F3F4F6;
+  --color-blogane-text-main: #111827;
+  --color-blogane-text-muted: #6B7280;
+
+  --font-inter: "Inter", sans-serif;
+  --font-space: "Space Grotesk", sans-serif;
+
+  /* Mappings for Shadcn/Default Use */
+  --background: #FFFFFF;
+  --foreground: #111827;
+  --primary: #F59E0B;
+  --primary-foreground: #000000;
+  --card: #FFFFFF;
+  --card-foreground: #111827;
+  --border: #E5E7EB;
+  --input: #E5E7EB;
+  --ring: #F59E0B;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  body {
+    background-color: var(--color-blogane-light);
+    color: var(--color-blogane-text-main);
+    font-family: var(--font-inter);
   }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
 }
