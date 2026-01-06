@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { EmailVerifiedGuard } from 'src/common/guards/email-verified.guard';
+import { EmailVerifiedGuard } from '../common/guards/email-verified.guard';
 import {
   CurrentUser,
   type CurrentUserType,

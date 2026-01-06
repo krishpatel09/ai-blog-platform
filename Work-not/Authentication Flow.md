@@ -67,7 +67,7 @@ Response (201 Created)
   accessToken: string,
   refreshToken: string,
   user: {
-    id: number,
+    id: string,
     username: string,
     email: string,
     emailVerified: boolean
@@ -210,7 +210,7 @@ Response (200 OK)
   accessToken: string,
   refreshToken: string,
   user: {
-    id: number,
+    id: string,
     username: string,
     email: string,
     emailVerified: boolean
@@ -330,7 +330,7 @@ Response (200 OK)
   accessToken: string,
   refreshToken: string, // NEW refresh token
   user: {
-    id: number,
+    id: string,
     username: string,
     email: string,
     emailVerified: boolean

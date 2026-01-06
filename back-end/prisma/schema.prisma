@@ -3,61 +3,49 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "postgresql"
 }
 
-model user {
-  id                  Int              @id @default(autoincrement())
-  username            String           @db.VarChar(20)
-  email               String           @unique @db.VarChar(255)
-  password            String           @db.VarChar(255)
-  emailVerified       Boolean          @default(false)
-  emailVerificationToken String?       @unique
-  isActive            Boolean          @default(true)
-  loginAttempts       Int              @default(0)
-  lockedUntil         DateTime?
-  lastLoginAt         DateTime?
-  lastLoginIp         String?
-  createdAt           DateTime         @default(now())
-  updatedAt           DateTime         @updatedAt
-  
-  tokens              RefreshToken[]
-  auditLogs           AuditLog[]
-  
-  @@index([email])
+model User {
+  id            String   @id @default(uuid())
+  username      String   @db.VarChar(20)
+  email         String   @unique @db.VarChar(255)
+  password      String   @db.VarChar(255)
+  emailVerified Boolean  @default(false)
+  emailVerificationToken String?  @unique
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  tokens        RefreshToken[]
+  auditLogs     AuditLog[]
 }
 
 model RefreshToken {
-  id            Int      @id @default(autoincrement())
-  token         String   @unique @db.VarChar(128)
-  userId        Int
-  expiresAt     DateTime
-  ipAddress     String?  @db.VarChar(45)
-  userAgent     String?  @db.VarChar(500)
-  isRevoked     Boolean  @default(false)
-  revokedAt     DateTime?
-  parentTokenId Int?
-  createdAt     DateTime @default(now())
+  id        String   @id @default(uuid())
+  token     String   @unique @db.VarChar(128)
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
   
-  user          user     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
-  @@index([token])
   @@index([expiresAt])
 }
 
 model AuditLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int?
+  id        String   @id @default(uuid())
+  userId    String
   action    String   @db.VarChar(50)
   ipAddress String?  @db.VarChar(45)
   userAgent String?  @db.VarChar(500)
-  details   String?  @db.Text
+  details   Json?
   success   Boolean  @default(true)
   createdAt DateTime @default(now())
-  
-  user      user?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
   @@index([userId])
   @@index([action])
   @@index([createdAt])

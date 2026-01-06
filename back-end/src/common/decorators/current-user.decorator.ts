@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface CurrentUserType {
-  id: number;
+  id: string;
   username: string;
   email: string;
   emailVerified: boolean;

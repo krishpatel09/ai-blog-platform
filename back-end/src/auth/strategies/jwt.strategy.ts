@@ -6,7 +6,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { Request } from 'express';
 
 interface JwtPayload {
-  userId: number;
+  userId: string;
   username: string;
   email: string;
 }
@@ -35,7 +35,7 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
 
     // Check if token is blacklisted
-    if (token && (await this.tokenService.isTokenBlacklisted(token))) {
+    if (token && (await this.tokenService.revokeRefreshToken(token))) {
       throw new UnauthorizedException('Token has been revoked');
     }
 

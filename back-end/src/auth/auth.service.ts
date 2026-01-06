@@ -12,9 +12,8 @@ import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-
-const MAX_LOGIN_ATTEMPTS = 4;
-const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
+import { use } from 'passport';
+ 
 
 @Injectable()
 export class AuthService {
@@ -30,87 +29,19 @@ export class AuthService {
 
     console.log('signinDto', signinDto);
     try {
-      const user = await this.prisma.user.findFirst({
+      const user = await this.prisma.user.findUnique({
         where: { email },
       });
 
       if (!user) {
-        await this.auditService.log({
-          action: 'LOGIN_FAILED',
-          ipAddress: ipAddress ?? '',
-          userAgent: userAgent ?? '',
-          details: `Failed login attempt for ${email}`,
-          success: false,
-        });
-        throw new UnauthorizedException('Invalid email or password');
-      }
-
-      // Check if account is locked
-      if (user.lockedUntil && user.lockedUntil > new Date()) {
-        const remainingTime = Math.ceil(
-          (user.lockedUntil.getTime() - Date.now()) / 60000,
-        );
-        throw new UnauthorizedException(
-          `Account is locked. Try again in ${remainingTime} minutes.`,
-        );
-      }
-
-      // Check if account is active
-      if (!user.isActive) {
-        throw new UnauthorizedException(
-          'Account has been deactivated. Please contact support.',
-        );
+        throw new UnauthorizedException('User not found');
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        // Increment failed login attempts
-        const loginAttempts = user.loginAttempts + 1;
-        const updateData: {
-          loginAttempts: number;
-          lockedUntil?: Date;
-        } = { loginAttempts };
-
-        if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-          updateData.lockedUntil = new Date(Date.now() + LOCK_TIME);
-        }
-
-        // Update user with failed attempt
-        await this.prisma.user.update({
-          where: { id: user.id },
-          data: updateData,
-        });
-
-        // Log failed attempt
-        await this.auditService.log({
-          userId: user.id,
-          action: 'LOGIN_FAILED',
-          ipAddress,
-          userAgent,
-          details: `Failed login attempt ${loginAttempts}/${MAX_LOGIN_ATTEMPTS}`,
-          success: false,
-        });
-
-        if (loginAttempts >= MAX_LOGIN_ATTEMPTS) {
-          throw new UnauthorizedException(
-            'Too many failed login attempts. Account locked for 15 minutes.',
-          );
-        }
-
-        throw new UnauthorizedException('Invalid email or password');
+        throw new UnauthorizedException('Invalid credentials');
       }
-
-      // Reset login attempts and update last login on successful login
-      await this.prisma.user.update({
-        where: { id: user.id },
-        data: {
-          loginAttempts: 0,
-          lockedUntil: null,
-          lastLoginAt: new Date(),
-          lastLoginIp: ipAddress ?? '',
-        },
-      });
 
       // Generate tokens
       const accessToken = this.tokenService.generateAccessToken({
@@ -119,11 +50,7 @@ export class AuthService {
         email: user.email,
       });
 
-      const refreshToken = await this.tokenService.generateRefreshToken(
-        user.id,
-        ipAddress,
-        userAgent,
-      );
+      const refreshToken = await this.tokenService.generateRefreshToken(user.id);
 
       // Log successful login
       await this.auditService.log({
@@ -160,7 +87,7 @@ export class AuthService {
     const { username, email, password } = signupDto;
 
     try {
-      const existingUser = await this.prisma.user.findFirst({
+      const existingUser = await this.prisma.user.findUnique({
         where: { email },
       });
 
@@ -171,7 +98,6 @@ export class AuthService {
       //hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Generate email verification token
       const emailVerificationToken =
         this.tokenService.generateEmailVerificationToken();
 
@@ -180,13 +106,9 @@ export class AuthService {
           username,
           email,
           password: hashedPassword,
+          emailVerified: false,
           emailVerificationToken,
-        },
-        select: {
-          id: true,
-          username: true,
-          email: true,
-          emailVerified: true,
+          isActive: true,
         },
       });
 
@@ -195,19 +117,6 @@ export class AuthService {
         user.email,
         user.username,
         emailVerificationToken,
-      );
-
-      // Generate tokens
-      const accessToken = this.tokenService.generateAccessToken({
-        userId: user.id,
-        username: user.username,
-        email: user.email,
-      });
-
-      const refreshToken = await this.tokenService.generateRefreshToken(
-        user.id,
-        ipAddress,
-        userAgent,
       );
 
       // Log signup
@@ -222,12 +131,10 @@ export class AuthService {
       // Clean up expired tokens (async, don't wait)
       this.tokenService.cleanupExpiredTokens().catch(console.error);
 
+
+
       return {
-        accessToken,
-        refreshToken,
-        user,
-        message:
-          'Signup successful. Please check your email to verify your account.',
+        message: 'Registration successful. Please verify your email.',
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -245,25 +152,18 @@ export class AuthService {
     userAgent?: string,
   ): Promise<{ message: string }> {
     try {
-      // Validate and get refresh token
-      const refreshTokenRecord =
-        await this.tokenService.validateRefreshToken(refreshToken);
+      const token = await this.prisma.refreshToken.findMany({
+        where: { token: refreshToken },
+        include: { user: true },
+      });
+      
 
-      // Blacklist access token if provided
-      if (accessToken) {
-        await this.tokenService.blacklistAccessToken(
-          accessToken,
-          refreshTokenRecord.userId,
-          900, // 15 min TTL
-        );
-      }
+      await this.prisma.refreshToken.delete({
+        where: { token: refreshToken },
+      });
 
-      // Delete refresh token
-      await this.tokenService.deleteRefreshToken(refreshToken);
-
-      // Log logout
       await this.auditService.log({
-        userId: refreshTokenRecord.userId,
+        userId: token[0].userId,
         action: 'LOGOUT',
         ipAddress,
         userAgent,
@@ -290,35 +190,23 @@ export class AuthService {
         dto.refreshToken,
       );
 
-      // Check if token is revoked
-      if (oldRefreshToken.isRevoked) {
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
-
-      // Generate new access token
+      const user = oldRefreshToken.user;
       const accessToken = this.tokenService.generateAccessToken({
-        userId: oldRefreshToken.user.id,
-        username: oldRefreshToken.user.username,
-        email: oldRefreshToken.user.email,
+        userId: user.id,
+        username: user.username,
+        email: user.email,
       });
 
-      // Generate new refresh token
-      const newRefreshToken = await this.tokenService.generateRefreshToken(
-        oldRefreshToken.user.id,
-        ipAddress,
-        userAgent,
-        oldRefreshToken.id, // Track parent token for reuse detection
-      );
+      const newRefreshToken = await this.tokenService.generateRefreshToken(user.id);
 
-      // Mark old token as revoked (don't delete for audit trail)
       await this.prisma.refreshToken.update({
         where: { id: oldRefreshToken.id },
-        data: { isRevoked: true, revokedAt: new Date() },
+        data: { isRevoked: true },
       });
 
       // Log token refresh
       await this.auditService.log({
-        userId: oldRefreshToken.user.id,
+        userId: user.id,
         action: 'TOKEN_REFRESH',
         ipAddress,
         userAgent,
@@ -345,18 +233,17 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    const user = await this.prisma.user.findFirst({
-      where: { emailVerificationToken: token },
-      select: {
-        id: true,
-        emailVerified: true,
-      },
-    });
+    try{
 
-    if (!user) {
+      console.log('Verifying email with token:', token);
+      const user = await this.prisma.user.findFirst({
+        where: { emailVerificationToken: { equals: token } },
+      });
+
+      if (!user) {
       throw new BadRequestException('Invalid or expired verification token');
     }
-
+    
     await this.prisma.user.update({
       where: { id: user.id },
       data: {
@@ -364,15 +251,36 @@ export class AuthService {
         emailVerificationToken: null,
       },
     });
-
+    
+    const accessToken = this.tokenService.generateAccessToken({
+      userId: user.id,
+      username: user.username,
+      email: user.email,
+    });
+    
+    const refreshToken = await this.tokenService.generateRefreshToken(user.id);
+    
+    console.log('Generated tokens after email verification', user.id);
+    
     await this.auditService.log({
       userId: user.id,
       action: 'EMAIL_VERIFIED',
       success: true,
     });
-
-    return { message: 'Email verified successfully' };
-  }
+    
+    return {
+      message: 'Email verified successfully',
+      accessToken,
+      refreshToken,
+    };
+  } catch (error) {
+    if (error instanceof BadRequestException) {
+      throw error;
+    }
+    console.error(error);
+    throw new InternalServerErrorException('Internal server error');
+  } 
+}
 
   async resendVerificationEmail(email: string) {
     const user = await this.prisma.user.findUnique({

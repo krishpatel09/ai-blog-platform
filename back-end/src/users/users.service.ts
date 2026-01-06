@@ -13,7 +13,7 @@ export class UsersService {
   constructor(private prisma: PrismaService) {}
 
   // 🔹 Get user profile
-  async getProfile(userId: number) {
+  async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -34,7 +34,7 @@ export class UsersService {
   }
 
   // 🔹 Update profile
-  async updateProfile(userId: number, dto: UpdateUserDto) {
+  async updateProfile(userId: string, dto: UpdateUserDto) {
     const updateData: { username?: string; email?: string } = {};
 
     if (dto.username !== undefined) {
@@ -58,7 +58,7 @@ export class UsersService {
   }
 
   // 🔹 Change password
-  async changePassword(userId: number, dto: ChangePasswordDto) {
+  async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });

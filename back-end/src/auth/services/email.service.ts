@@ -7,14 +7,12 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name);
 
   constructor() {
-    // Only create transporter if SMTP is configured
     if (
       process.env.SMTP_HOST &&
       process.env.SMTP_USER &&
       process.env.SMTP_PASS
     ) {
       const port = parseInt(process.env.SMTP_PORT || '587');
-      // Port 465 requires secure: true, port 587 uses STARTTLS (secure: false)
       const secure = port === 465 || process.env.SMTP_SECURE === 'true';
 
       this.transporter = nodemailer.createTransport({
@@ -25,14 +23,12 @@ export class EmailService {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
         },
-        // Connection timeout settings
-        connectionTimeout: 10000, // 10 seconds
+        connectionTimeout: 10000, 
         greetingTimeout: 10000,
         socketTimeout: 10000,
-        // TLS options for port 587 (STARTTLS)
         requireTLS: port === 587,
         tls: {
-          rejectUnauthorized: false, // Allow self-signed certificates in development
+          rejectUnauthorized: false, 
         },
       });
 
@@ -51,7 +47,6 @@ export class EmailService {
       this.logger.error(
         'Cannot send verification email: SMTP is not configured. Please set SMTP environment variables.',
       );
-      // In development, you might want to log the token instead of throwing
       if (process.env.NODE_ENV === 'development') {
         this.logger.warn(
           `[DEV MODE] Verification token for ${email}: ${token}`,
@@ -61,7 +56,7 @@ export class EmailService {
       throw new Error('Email service is not configured');
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/api/auth/verify-email?token=${token}`;
 
     try {
       await this.transporter.sendMail({
@@ -92,19 +87,16 @@ export class EmailService {
         `Failed to send verification email to ${email}: ${errorMessage}`,
       );
 
-      // In development, log the token instead of failing completely
       if (process.env.NODE_ENV === 'development') {
         this.logger.warn(
           `[DEV MODE] Email sending failed, but here's the verification token for ${email}: ${token}`,
         );
         this.logger.warn(
-          `[DEV MODE] Verification URL: ${process.env.FRONTEND_URL}/verify-email?token=${token}`,
+          `[DEV MODE] Verification URL: ${process.env.FRONTEND_URL}/api/auth/verify-email?token=${token}`,
         );
-        // Don't throw in dev mode - allow signup to succeed
         return;
       }
 
-      // In production, throw the error
       throw error;
     }
   }
@@ -114,7 +106,6 @@ export class EmailService {
       this.logger.error(
         'Cannot send password reset email: SMTP is not configured. Please set SMTP environment variables.',
       );
-      // In development, you might want to log the token instead of throwing
       if (process.env.NODE_ENV === 'development') {
         this.logger.warn(
           `[DEV MODE] Password reset token for ${email}: ${token}`,
@@ -124,7 +115,7 @@ export class EmailService {
       throw new Error('Email service is not configured');
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/api/auth/reset-password?token=${token}`;
 
     try {
       await this.transporter.sendMail({
@@ -156,15 +147,13 @@ export class EmailService {
         `Failed to send password reset email to ${email}: ${errorMessage}`,
       );
 
-      // In development, log the token instead of failing completely
       if (process.env.NODE_ENV === 'development') {
         this.logger.warn(
           `[DEV MODE] Email sending failed, but here's the password reset token for ${email}: ${token}`,
         );
         this.logger.warn(
-          `[DEV MODE] Reset URL: ${process.env.FRONTEND_URL}/reset-password?token=${token}`,
+          `[DEV MODE] Reset URL: ${process.env.FRONTEND_URL}/api/auth/reset-password?token=${token}`,
         );
-        // Don't throw in dev mode
         return;
       }
 

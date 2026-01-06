@@ -11,7 +11,7 @@ import { Observable } from 'rxjs';
 
 interface RequestWithUser extends Request {
   user?: {
-    userId: number;
+    userId: string;
     username: string;
     email: string;
   };
@@ -50,7 +50,7 @@ export class AuthGuard implements CanActivate {
       }
       // Verify access token
       const decoded = this.jwtService.verify<{
-        userId: number;
+        userId: string  ;
         username: string;
         email: string;
       }>(token, {

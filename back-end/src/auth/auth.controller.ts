@@ -7,6 +7,7 @@ import {
   Ip,
   Headers,
   Req,
+  Query,
 } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -71,9 +72,9 @@ export class AuthController {
     return this.authService.refreshToken(dto, ip, userAgent);
   }
 
-  @Post('verify-email')
-  async verifyEmail(@Body() dto: VerifyEmailDto) {
-    return this.authService.verifyEmail(dto.token);
+  @Get('verify-email')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyEmail(token);
   }
 
   @Post('resend-verification')
