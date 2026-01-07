@@ -1,70 +1,71 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signupSchema, type SignupInput } from '@/lib/zod/auth/auth.Schema'
-// import { signUpUser, googleSignIn } from '@/lib/api/auth.api'
-import toast from 'react-hot-toast'
+import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import Link from 'next/link'
 import AuthLayout from './Layout'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff } from 'lucide-react'
+import axiosInstance from '@/services/api/axiosInstance'
+import { API_PATH } from '@/services/api/Apipath'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
     password: '',
-    confirmPassword: '',
   })
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof SignupInput, string>>>({})
   const router = useRouter()
+  const { showSuccess, showError } = useToast()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setFieldErrors({})
 
-    //   const result = signupSchema.safeParse(formData)
+    // 1. Client-side Validation
+    const result = signupSchema.safeParse(formData)
 
-    //   if (!result.success) {
-    //     const errors: Partial<Record<keyof SignupInput, string>> = {}
-    //     result.error.issues.forEach((err) => {
-    //       const field = err.path[0] as keyof SignupInput
-    //       errors[field] = err.message
-    //     })
-    //     setFieldErrors(errors)
-    //     setLoading(false)
-    //     return
-    //   }
+    if (!result.success) {
+      const errors: Partial<Record<keyof SignupInput, string>> = {}
+      result.error.issues.forEach((err) => {
+        const field = err.path[0] as keyof SignupInput
+        errors[field] = err.message
+      })
+      setFieldErrors(errors)
+      setLoading(false)
+      return
+    }
 
-    //   // const authResult = await signUpUser(result.data)
-    //  const authResult = new authre
+    // 2. Submit to API
+    try {
+      const response = await axiosInstance.post(API_PATH.AUTH.SIGNUP, {
+        username: formData.username,
+        email: formData.email,
+        password: formData.password
+      });
+      console.log(response.data);
 
-    //   if (!authResult.success) {
-    //     toast.error(authResult.error || 'Failed to create account')
-    //     setLoading(false)
-    //     return
-    //   }
-
-    //   if (authResult.data && typeof authResult.data === 'object' && 'user' in authResult.data) {
-    //     toast.success('Account created! Redirecting...')
-    //     router.push('/sign-in')
-    //   }
+      if (response.data.success) {
+        showSuccess('Account created! Redirecting...')
+        router.push('/verify-email')
+      } else {
+        showError(response.data.message || 'Failed to create account');
+      }
+    } catch (error: any) {
+      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong during sign up'
+      showError(errorMessage);
+      console.log(error);
+    } finally {
+      setLoading(false)
+    }
   }
-
-  // const handleGoogleSignUp = async () => {
-  //   setLoading(true)
-  //   const authResult = await googleSignIn()
-  //   if (!authResult.success) {
-  //     toast.error(authResult.error || 'Failed to sign up with Google')
-  //     setLoading(false)
-  //   }
-  // }
 
   return (
     <AuthLayout>

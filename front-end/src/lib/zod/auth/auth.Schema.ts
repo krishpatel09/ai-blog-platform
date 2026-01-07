@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+
+//signup schema
 export const signupSchema = z.object({
   username: z
     .string()
@@ -12,16 +14,12 @@ export const signupSchema = z.object({
     .string()
     .min(1, "Password is required")
     .min(6, "Password must be at least 6 characters"),
-  confirmPassword: z
-    .string()
-    .min(1, "Please confirm your password"),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords do not match",
-  path: ["confirmPassword"],
 })
 
 export type SignupInput = z.infer<typeof signupSchema>
 
+
+//login schema
 export const loginSchema = z.object({
   email: z
     .string()
@@ -33,3 +31,29 @@ export const loginSchema = z.object({
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
+
+//forgot password schema
+export const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Invalid email address"),
+})
+
+export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
+
+//reset password schema
+export const resetPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(1, "Password is required")
+    .min(6, "Password must be at least 6 characters"),
+  confirmPassword: z
+    .string()
+    .min(1, "Please confirm your password"),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+})
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>

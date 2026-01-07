@@ -6,10 +6,13 @@ import { PrismaNeonHttp } from '@prisma/adapter-neon';
 @Injectable()
 export class PrismaService
   extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy
-{
+  implements OnModuleInit, OnModuleDestroy {
   constructor(private readonly config: ConfigService) {
     const databaseUrl = config.get<string>('DATABASE_URL');
+    if (databaseUrl) {
+      console.log('Initialize Prisma with URL length:', databaseUrl.length);
+      console.log('Host:', databaseUrl.split('@')[1]?.split('/')[0]);
+    }
 
     if (!databaseUrl || databaseUrl.trim() === '') {
       throw new Error('DATABASE_URL is required');

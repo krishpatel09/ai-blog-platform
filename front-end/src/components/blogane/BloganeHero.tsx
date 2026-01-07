@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 
@@ -18,11 +18,14 @@ export function BloganeHero() {
                 </p>
 
                 <div className="flex justify-center">
-                    <Button
-                        className="h-12 px-8 rounded-full bg-(--color-blogane-yellow) text-black font-semibold text-lg hover:bg-(--color-blogane-yellow)/90 hover:scale-105 transition-all"
-                    >
-                        Start Reading
-                    </Button>
+                    <Link href="/sign-up">
+                        <Button
+
+                            className="h-12 px-8 rounded-full bg-(--color-blogane-yellow) text-black font-semibold text-lg hover:bg-(--color-blogane-yellow)/90 hover:scale-105 transition-all"
+                        >
+                            Start Reading
+                        </Button>
+                    </Link>
                 </div>
             </div>
 

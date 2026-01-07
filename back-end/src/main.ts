@@ -1,16 +1,18 @@
 import { NestFactory } from '@nestjs/core';
+import { setDefaultResultOrder } from 'dns';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 
 async function bootstrap() {
+  setDefaultResultOrder('ipv4first');
   const app = await NestFactory.create(AppModule);
 
   // Security
   app.use(helmet());
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5000',
+    origin: process.env.FRONTEND_URL,
     credentials: true,
   });
 

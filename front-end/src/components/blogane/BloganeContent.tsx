@@ -14,6 +14,7 @@ export function BloganeContent() {
             author: "Brooklyn Simmons",
             likes: "15.8k",
             comments: "15.8k",
+            authorImage: "https://images.unsplash.com/photo-1568602471122-7832951cc4c5?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8bWFufGVufDB8fDB8fHww",
             image: "https://images.unsplash.com/photo-1526379095098-d400fd0bf935?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8NHx8cHl0aG9ufGVufDB8fDB8fHww"
         },
         {
@@ -24,6 +25,7 @@ export function BloganeContent() {
             author: "Cody Fisher",
             likes: "15.8k",
             comments: "15.8k",
+            authorImage: "https://images.unsplash.com/photo-1590086782957-93c06ef21604?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
             image: "https://images.unsplash.com/photo-1620712943543-bcc4688e7485?q=80&w=1530&auto=format&fit=crop"
         },
         {
@@ -34,6 +36,7 @@ export function BloganeContent() {
             author: "Jacob Jones",
             likes: "15.8k",
             comments: "15.8k",
+            authorImage: "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTF8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
             image: "https://images.unsplash.com/photo-1555949963-ff9fe0c870eb?q=80&w=1470&auto=format&fit=crop"
         },
         {
@@ -44,6 +47,7 @@ export function BloganeContent() {
             author: "Devon Lane",
             likes: "15.8k",
             comments: "15.8k",
+            authorImage: "https://images.unsplash.com/photo-1590086782957-93c06ef21604?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTB8fG1hbnxlbnwwfHwwfHx8MA%3D%3D",
             image: "https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=1632&auto=format&fit=crop"
         }
     ];
@@ -103,9 +107,12 @@ export function BloganeContent() {
 
                                     <div className="flex items-center justify-between border-t border-(--color-blogane-gray) pt-4">
                                         <div className="flex items-center gap-2">
-                                            <div className="w-6 h-6 rounded-full bg-gray-300"></div>
+                                            <div className="w-6 h-6 rounded-full bg-gray-300">
+                                                <img src={article.authorImage} alt={article.author} className="w-full h-full object-cover rounded-full" />
+                                            </div>
                                             <span className="text-xs font-bold text-(--color-blogane-text-main)">{article.author}</span>
                                         </div>
+
                                         <div className="flex items-center gap-4 text-(--color-blogane-text-muted) text-xs">
                                             <span className="flex items-center gap-1"><Heart className="w-3 h-3" /> {article.likes}</span>
                                             <span className="flex items-center gap-1"><MessageSquare className="w-3 h-3" /> {article.comments}</span>

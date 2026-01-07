@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loginSchema, type LoginInput } from '@/lib/zod/auth/auth.Schema'
 // import { signInUser, googleSignIn } from '@/lib/api/auth.api'
-import toast from 'react-hot-toast'
+import { useToast } from '@/hooks/use-toast'
 import Image from 'next/image'
 import Link from 'next/link'
 import AuthLayout from './Layout'
@@ -19,39 +19,38 @@ export default function SignIn() {
   const [rememberMe, setRememberMe] = useState(false)
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof LoginInput, string>>>({})
   const router = useRouter()
+  const { showSuccess, showError } = useToast()
 
-  // const handleSignIn = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   setLoading(true)
-  //   setFieldErrors({})
+  const handleSignIn = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setLoading(true)
+    setFieldErrors({})
 
-  //   const result = loginSchema.safeParse({ email, password })
+    const result = loginSchema.safeParse({ email, password })
 
-  //   if (!result.success) {
-  //     const errors: Partial<Record<keyof LoginInput, string>> = {}
-  //     result.error.issues.forEach((err) => {
-  //       const field = err.path[0] as keyof LoginInput
-  //       errors[field] = err.message
-  //     })
-  //     setFieldErrors(errors)
-  //     setLoading(false)
-  //     return
-  //   }
+    if (!result.success) {
+      const errors: Partial<Record<keyof LoginInput, string>> = {}
+      result.error.issues.forEach((err) => {
+        const field = err.path[0] as keyof LoginInput
+        errors[field] = err.message
+      })
+      setFieldErrors(errors)
+      setLoading(false)
+      return
+    }
 
-  //   const authResult = await signInUser(result.data)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1500))
 
-  //   if (!authResult.success) {
-  //     toast.error(authResult.error || 'Failed to sign in')
-  //     setLoading(false)
-  //     return
-  //   }
+    // Simulate success
+    const authResult = { success: true, data: { user: { email } } }
 
-  //   if (authResult.data && typeof authResult.data === 'object' && 'user' in authResult.data) {
-  //     toast.success('Signed in successfully')
-  //     router.push('/')
-  //     router.refresh()
-  //   }
-  // }
+    if (authResult.data && typeof authResult.data === 'object' && 'user' in authResult.data) {
+      showSuccess('Signed in successfully')
+      router.push('/')
+      router.refresh()
+    }
+  }
 
   // const handleGoogleSignIn = async () => {
   //   setLoading(true)
@@ -75,7 +74,7 @@ export default function SignIn() {
           </Link>
         </h2>
       </div>
-      <form className="space-y-6" >
+      <form className="space-y-6" onSubmit={handleSignIn}>
         <div className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -150,9 +149,9 @@ export default function SignIn() {
             </label>
           </div>
           <div className="text-sm">
-            <a href="#" className="font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400">
+            <Link href="/forgot-password" className="font-medium text-gray-500 hover:text-gray-800 dark:text-gray-400">
               Forgot Password?
-            </a>
+            </Link>
           </div>
         </div>
 
