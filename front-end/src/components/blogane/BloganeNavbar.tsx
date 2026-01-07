@@ -7,7 +7,7 @@ export function BloganeNavbar() {
             <div className="max-w-7xl mx-auto flex items-center justify-between relative">
                 {/* Left: Logo */}
                 <Link href="/" className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-[var(--color-blogane-yellow)] rounded flex items-center justify-center text-black font-bold font-serif text-xl">
+                    <div className="w-8 h-8 bg-(--color-blogane-yellow) rounded flex items-center justify-center text-black font-bold font-serif text-xl">
                         Ai
                     </div>
                     <span className="text-xl font-bold tracking-tight">Genwrite</span>
@@ -15,7 +15,7 @@ export function BloganeNavbar() {
 
                 {/* Center: Links */}
                 <div className="absolute left-1/2 -translate-x-1/2 hidden md:flex items-center gap-8">
-                    <Link href="/" className="text-sm font-medium hover:text-[var(--color-blogane-yellow)] transition-colors">Home</Link>
+                    <Link href="/" className="text-sm font-medium hover:text-(--color-blogane-yellow) transition-colors">Home</Link>
                     <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Our Story</Link>
                     <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Membership</Link>
                     <Link href="#" className="text-sm font-medium text-white/70 hover:text-white transition-colors">Write</Link>
@@ -24,7 +24,7 @@ export function BloganeNavbar() {
 
                 {/* Right: Auth */}
                 <div className="flex items-center gap-4">
-                    <Link href="/sign-in" className="text-sm font-medium hover:text-[var(--color-blogane-yellow)] transition-colors">
+                    <Link href="/sign-in" className="text-sm font-medium hover:text-(--color-blogane-yellow) transition-colors">
                         Sign In
                     </Link>
                     <Link href="/sign-up">

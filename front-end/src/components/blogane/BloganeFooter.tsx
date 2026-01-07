@@ -8,11 +8,11 @@ export function BloganeFooter() {
 
                 <div className="max-w-xs">
                     <div className="flex items-center gap-2 mb-6">
-                        <div className="w-8 h-8 rounded bg-[var(--color-blogane-yellow)] flex items-center justify-center text-black font-bold font-serif text-xl">B</div>
-                        <span className="text-xl font-bold tracking-tight">Blogane</span>
+                        <div className="w-8 h-8 rounded bg-(--color-blogane-yellow) flex items-center justify-center text-black font-bold font-serif text-xl">Ai</div>
+                        <span className="text-xl font-bold tracking-tight">Genwrite</span>
                     </div>
                     <p className="text-white/60 text-sm mb-6">
-                        Quality articles from talented writers on topics ranging from technology and culture to lifestyle.
+                        Quality Blog Platform from talented writers on topics ranging from technology and culture to lifestyle.
                     </p>
                     <div className="flex gap-4">
                         <Instagram className="w-5 h-5 text-white/60 hover:text-white cursor-pointer" />
@@ -25,27 +25,27 @@ export function BloganeFooter() {
                     <div>
                         <h4 className="font-bold text-sm mb-6">Categories</h4>
                         <ul className="space-y-4 text-xs text-white/60">
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Programming</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Blockchain</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Data Science</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">User Experience</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Programming</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Blockchain</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Data Science</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">User Experience</Link></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-bold text-sm mb-6">Menu</h4>
                         <ul className="space-y-4 text-xs text-white/60">
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Home</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">About Us</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Pricing</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Home</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">About Us</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Pricing</Link></li>
                         </ul>
                     </div>
                     <div>
                         <h4 className="font-bold text-sm mb-6">Follow Us</h4>
                         <ul className="space-y-4 text-xs text-white/60">
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Instagram</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Facebook</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Medium</Link></li>
-                            <li><Link href="#" className="hover:text-[var(--color-blogane-yellow)]">Twitter</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Instagram</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Facebook</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Medium</Link></li>
+                            <li><Link href="#" className="hover:text-(--color-blogane-yellow)">Twitter</Link></li>
                         </ul>
                     </div>
                 </div>
@@ -63,7 +63,7 @@ export function BloganeFooter() {
 
             <div className="max-w-7xl mx-auto pt-8 border-t border-white/10 flex flex-col md:flex-row justify-between items-center gap-4">
                 <div className="text-xs text-white/40">
-                    Copyright © 2026 Blogane Creative Agency. All Right Reserved.
+                    Copyright © 2026 Genwrite Creative Agency. All Right Reserved.
                 </div>
                 <div className="flex gap-6 text-xs text-white/40">
                     <Link href="#" className="hover:text-white">Terms of Service</Link>

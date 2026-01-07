@@ -66,13 +66,15 @@ export default function SignIn() {
     <AuthLayout>
       <div className="flex flex-col space-y-2 mb-8">
         <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-          Welcome Back to Realnest!
+          Welcome Back to
+          <Link href="/" className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-(--color-blogane-yellow) rounded flex items-center justify-center text-black font-bold font-serif text-xl">
+              Ai
+            </div>
+            <span className="text-xl font-bold tracking-tight">Genwrite</span>
+          </Link>
         </h2>
-        <p className="text-gray-500 dark:text-gray-400">
-          Sign in your account
-        </p>
       </div>
-
       <form className="space-y-6" >
         <div className="space-y-5">
           <div className="space-y-2">
@@ -90,9 +92,9 @@ export default function SignIn() {
                 setEmail(e.target.value)
                 if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined })
               }}
-              className={`h-12 rounded-lg border-gray-300 px-4 focus:ring-black dark:bg-gray-900 dark:border-gray-700 ${fieldErrors.email ? 'border-red-500 focus:ring-red-500' : ''
+              className={`h-12 rounded-lg border-gray-300 px-4 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.email ? 'border-red-500 focus:ring-red-500' : ''
                 }`}
-              placeholder="info.madhu786@gmail.com"
+              placeholder="Enter your email"
             />
             {fieldErrors.email && (
               <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.email}</p>
@@ -115,9 +117,9 @@ export default function SignIn() {
                   setPassword(e.target.value)
                   if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined })
                 }}
-                className={`h-12 rounded-lg border-gray-300 px-4 pr-10 focus:ring-black dark:bg-gray-900 dark:border-gray-700 ${fieldErrors.password ? 'border-red-500 focus:ring-red-500' : ''
+                className={`h-12 rounded-lg border-gray-300 px-4 pr-10 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.password ? 'border-red-500 focus:ring-red-500' : ''
                   }`}
-                placeholder="********"
+                placeholder="Enter your password"
               />
               <button
                 type="button"
@@ -162,7 +164,7 @@ export default function SignIn() {
           {loading ? 'Login' : 'Login'}
         </button>
 
-        <div className="relative my-8">
+        <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
             <div className="w-full border-t border-gray-200 dark:border-gray-800" />
           </div>
@@ -175,14 +177,14 @@ export default function SignIn() {
       <div className="grid grid-cols-2 gap-4">
         <button
           // onClick={handleGoogleSignIn}
-          className="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
         >
           <Image src="/google-logo.svg" alt="Google" width={20} height={20} className="mr-2" />
           Google
         </button>
         <button
           type="button"
-          className="flex items-center justify-center px-4 py-2.5 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
+          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
         >
           <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 24 24">
             <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
