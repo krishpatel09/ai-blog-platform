@@ -6,7 +6,6 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 }
 
 const URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-console.log(URL);
 
 const axiosInstance = axios.create({
     baseURL: URL,

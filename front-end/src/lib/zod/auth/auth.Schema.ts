@@ -5,15 +5,16 @@ import { z } from "zod"
 export const signupSchema = z.object({
   username: z
     .string()
-    .min(1, "Username is required"),
+    .min(1, "Username is required")
+    .min(3, "Username must be at least 3 characters"),
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Invalid email address"),
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"),
   password: z
     .string()
     .min(1, "Password is required")
-    .min(6, "Password must be at least 6 characters"),
+    .min(8, "Password must be at least 8 characters"),
 })
 
 export type SignupInput = z.infer<typeof signupSchema>
@@ -24,7 +25,7 @@ export const loginSchema = z.object({
   email: z
     .string()
     .min(1, "Email is required")
-    .email("Invalid email address"),
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Invalid email address"),
   password: z
     .string()
     .min(1, "Password is required"),

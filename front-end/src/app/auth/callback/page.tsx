@@ -1,46 +1,35 @@
-// 'use client'
+'use client'
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from "@clerk/nextjs";
 
-// import { useEffect } from 'react'
-// import { useRouter } from 'next/navigation'
-// import { supabase } from '@/lib/supabase/supabaseClient'
+export default function AuthCallback() {
+    const router = useRouter();
+    const { isLoaded, isSignedIn } = useAuth();
 
-// export default function AuthCallback() {
-//   const router = useRouter()
+    useEffect(() => {
+        try {
+            if (!isLoaded) return;
 
-//   useEffect(() => {
-//     const handleAuthCallback = async () => {
-//       try {
-//         const { data, error } = await supabase.auth.getSession()
-        
-//         if (error) {
-//           console.error('Error getting session:', error)
-//           router.push('/sign-in?error=auth_failed')
-//           return
-//         }
+            if (isSignedIn) {
+                router.replace('/dashboard')
+            } else {
+                router.replace("/auth/error")
+            }
+        } catch (error) {
+            console.error('Unexpected error:', error)
+            router.replace('/auth/error')
+        }
+    }, [isLoaded, isSignedIn, router]);
 
-//         if (data.session) {
-//           router.push('/')
-//           router.refresh()
-//         } else {
-//           router.push('/sign-in')
-//         }
-//       } catch (error) {
-//         console.error('Unexpected error:', error)
-//         router.push('/sign-in?error=unexpected')
-//       }
-//     }
-
-//     handleAuthCallback()
-//   }, [router])
-
-//   return (
-//     <div className="flex min-h-screen items-center justify-center">
-//       <div className="text-center">
-//         <p className="text-lg text-gray-600 dark:text-gray-400">
-//           Completing sign in...
-//         </p>
-//       </div>
-//     </div>
-//   )
-// }
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+                <p className="text-lg text-gray-600 dark:text-gray-400">
+                    Completing sign in...
+                </p>
+            </div>
+        </div>
+    )
+}
 

@@ -23,12 +23,12 @@ export class EmailService {
           user: process.env.SMTP_USER,
           pass: process.env.SMTP_PASS,
         },
-        connectionTimeout: 10000, 
+        connectionTimeout: 10000,
         greetingTimeout: 10000,
         socketTimeout: 10000,
         requireTLS: port === 587,
         tls: {
-          rejectUnauthorized: false, 
+          rejectUnauthorized: false,
         },
       });
 
@@ -56,7 +56,7 @@ export class EmailService {
       throw new Error('Email service is not configured');
     }
 
-    const verificationUrl = `${process.env.FRONTEND_URL}/api/auth/verify-email?token=${token}`;
+    const verificationUrl = `${process.env.FRONTEND_URL}/verify-email?token=${token}`;
 
     try {
       await this.transporter.sendMail({
@@ -92,7 +92,7 @@ export class EmailService {
           `[DEV MODE] Email sending failed, but here's the verification token for ${email}: ${token}`,
         );
         this.logger.warn(
-          `[DEV MODE] Verification URL: ${process.env.FRONTEND_URL}/api/auth/verify-email?token=${token}`,
+          `[DEV MODE] Verification URL: ${process.env.FRONTEND_URL}/verify-email?token=${token}`,
         );
         return;
       }
@@ -115,7 +115,7 @@ export class EmailService {
       throw new Error('Email service is not configured');
     }
 
-    const resetUrl = `${process.env.FRONTEND_URL}/api/auth/reset-password?token=${token}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
 
     try {
       await this.transporter.sendMail({
@@ -152,7 +152,7 @@ export class EmailService {
           `[DEV MODE] Email sending failed, but here's the password reset token for ${email}: ${token}`,
         );
         this.logger.warn(
-          `[DEV MODE] Reset URL: ${process.env.FRONTEND_URL}/api/auth/reset-password?token=${token}`,
+          `[DEV MODE] Reset URL: ${process.env.FRONTEND_URL}/reset-password?token=${token}`,
         );
         return;
       }

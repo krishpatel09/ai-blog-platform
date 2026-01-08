@@ -3,13 +3,15 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { loginSchema, type LoginInput } from '@/lib/zod/auth/auth.Schema'
-// import { signInUser, googleSignIn } from '@/lib/api/auth.api'
 import { useToast } from '@/hooks/use-toast'
-import Image from 'next/image'
 import Link from 'next/link'
 import AuthLayout from './Layout'
 import { Input } from '@/components/ui/input'
 import { Eye, EyeOff, Check } from 'lucide-react'
+import { ClerkSocialLogin } from './clerk-auth'
+import axiosInstance from '@/services/api/axiosInstance'
+import { API_PATH } from '@/services/api/Apipath'
+import TokenService from '@/services/api/Tokenservice'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -39,27 +41,33 @@ export default function SignIn() {
       return
     }
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500))
+    try {
+      const response = await axiosInstance.post(`${API_PATH.AUTH.LOGIN}`, { email, password });
 
-    // Simulate success
-    const authResult = { success: true, data: { user: { email } } }
+      if (response.data.success) {
+        if (response.data.data) {
+          TokenService.setUser(response.data.data);
+        } else if (response.data.user) {
+          TokenService.setUser(response.data.user);
+        } else {
+          TokenService.setUser(response.data);
+        }
 
-    if (authResult.data && typeof authResult.data === 'object' && 'user' in authResult.data) {
-      showSuccess('Signed in successfully')
-      router.push('/')
-      router.refresh()
+        showSuccess(response.data.message)
+        router.push('/dashboard')
+      } else {
+        showError(response.data.message)
+      }
+    } catch (error: any) {
+      console.error(error)
+      const errorMessage = error.response?.data?.message || error.message || error
+      showError(errorMessage)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // const handleGoogleSignIn = async () => {
-  //   setLoading(true)
-  //   const authResult = await googleSignIn()
-  //   if (!authResult.success) {
-  //     toast.error(authResult.error || 'Failed to sign in with Google')
-  //     setLoading(false)
-  //   }
-  // }
+
 
   return (
     <AuthLayout>
@@ -160,7 +168,7 @@ export default function SignIn() {
           disabled={loading}
           className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Login' : 'Login'}
+          {loading ? 'Logging in...' : 'Login'}
         </button>
 
         <div className="relative my-6">
@@ -173,24 +181,7 @@ export default function SignIn() {
         </div>
       </form>
 
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          // onClick={handleGoogleSignIn}
-          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Image src="/google-logo.svg" alt="Google" width={20} height={20} className="mr-2" />
-          Google
-        </button>
-        <button
-          type="button"
-          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-        >
-          <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-          </svg>
-          Facebook
-        </button>
-      </div>
+      <ClerkSocialLogin />
 
       <div className="mt-8 text-center text-sm">
         <span className="text-gray-500">Don't have any account? </span>
@@ -198,6 +189,7 @@ export default function SignIn() {
           Register
         </Link>
       </div>
+
     </AuthLayout>
   )
 }

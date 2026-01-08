@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
+import { ClerkProvider } from '@clerk/nextjs'
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space",
@@ -26,13 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" >
-      <body
-        className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-[var(--color-ai-bg)] text-[var(--color-ai-text)]`}
-      >
-        {children}
-        <Toaster position="top-right" />
-      </body>
-    </html >
+    <ClerkProvider>
+      <html lang="en" >
+        <body
+          className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-(--color-ai-bg) text-(--color-ai-text)`}
+        >
+          {children}
+          <Toaster position="top-right" />
+        </body>
+      </html >
+    </ClerkProvider>
   );
 }

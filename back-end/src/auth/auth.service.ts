@@ -13,7 +13,7 @@ import { SigninDto } from './dto/signin.dto';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { use } from 'passport';
- 
+
 
 @Injectable()
 export class AuthService {
@@ -22,7 +22,7 @@ export class AuthService {
     private tokenService: TokenService,
     private emailService: EmailService,
     private auditService: AuditService,
-  ) {}
+  ) { }
 
   async signin(signinDto: SigninDto, ipAddress?: string, userAgent?: string) {
     const { email, password } = signinDto;
@@ -34,13 +34,13 @@ export class AuthService {
       });
 
       if (!user) {
-        throw new UnauthorizedException('User not found');
+        return { success: false, message: 'User not found' };
       }
 
       const isPasswordValid = await bcrypt.compare(password, user.password);
 
       if (!isPasswordValid) {
-        throw new UnauthorizedException('Invalid credentials');
+        return { success: false, message: 'Invalid credentials' };
       }
 
       // Generate tokens
@@ -73,6 +73,8 @@ export class AuthService {
           email: user.email,
           emailVerified: user.emailVerified,
         },
+        message: 'Login successful',
+        success: true,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -92,7 +94,7 @@ export class AuthService {
       });
 
       if (existingUser) {
-        throw new BadRequestException('User already exists');
+        return { success: false, message: 'User already exists' };
       }
 
       //hash password
@@ -130,11 +132,10 @@ export class AuthService {
 
       // Clean up expired tokens (async, don't wait)
       this.tokenService.cleanupExpiredTokens().catch(console.error);
-
-
-
+      console.log('Registration successful. Please verify your email.');
       return {
         message: 'Registration successful. Please verify your email.',
+        success: true,
       };
     } catch (error) {
       if (error instanceof BadRequestException) {
@@ -156,7 +157,7 @@ export class AuthService {
         where: { token: refreshToken },
         include: { user: true },
       });
-      
+
 
       await this.prisma.refreshToken.delete({
         where: { token: refreshToken },
@@ -171,7 +172,7 @@ export class AuthService {
       });
 
       this.tokenService.cleanupExpiredTokens().catch(console.error);
-
+      console.log('Logged out successfully');
       return { message: 'Logged out successfully' };
     } catch (error) {
       console.error('Error during logout:', error);
@@ -233,7 +234,7 @@ export class AuthService {
   }
 
   async verifyEmail(token: string) {
-    try{
+    try {
 
       console.log('Verifying email with token:', token);
       const user = await this.prisma.user.findFirst({
@@ -241,46 +242,46 @@ export class AuthService {
       });
 
       if (!user) {
-      throw new BadRequestException('Invalid or expired verification token');
+        return { success: false, message: 'Invalid or expired verification token' };
+      }
+
+      await this.prisma.user.update({
+        where: { id: user.id },
+        data: {
+          emailVerified: true,
+          emailVerificationToken: null,
+        },
+      });
+
+      const accessToken = this.tokenService.generateAccessToken({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+      });
+
+      const refreshToken = await this.tokenService.generateRefreshToken(user.id);
+
+      console.log('Generated tokens after email verification', user.id);
+
+      await this.auditService.log({
+        userId: user.id,
+        action: 'EMAIL_VERIFIED',
+        success: true,
+      });
+      console.log('Email verified successfully');
+      return {
+        message: 'Email verified successfully',
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error(error);
+      throw new InternalServerErrorException('Internal server error');
     }
-    
-    await this.prisma.user.update({
-      where: { id: user.id },
-      data: {
-        emailVerified: true,
-        emailVerificationToken: null,
-      },
-    });
-    
-    const accessToken = this.tokenService.generateAccessToken({
-      userId: user.id,
-      username: user.username,
-      email: user.email,
-    });
-    
-    const refreshToken = await this.tokenService.generateRefreshToken(user.id);
-    
-    console.log('Generated tokens after email verification', user.id);
-    
-    await this.auditService.log({
-      userId: user.id,
-      action: 'EMAIL_VERIFIED',
-      success: true,
-    });
-    
-    return {
-      message: 'Email verified successfully',
-      accessToken,
-      refreshToken,
-    };
-  } catch (error) {
-    if (error instanceof BadRequestException) {
-      throw error;
-    }
-    console.error(error);
-    throw new InternalServerErrorException('Internal server error');
-  } 
-}
+  }
 
   async resendVerificationEmail(email: string) {
     const user = await this.prisma.user.findUnique({
@@ -297,11 +298,12 @@ export class AuthService {
       // Don't reveal if user exists
       return {
         message: 'If the email exists, a verification email has been sent.',
+        success: true,
       };
     }
 
     if (user.emailVerified) {
-      throw new BadRequestException('Email is already verified');
+      return { success: false, message: 'Email is already verified' };
     }
 
     // Generate new token

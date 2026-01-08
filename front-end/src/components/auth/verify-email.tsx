@@ -1,79 +1,101 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import React, { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import AuthLayout from './Layout'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import axiosInstance from '@/services/api/axiosInstance'
+import { API_PATH } from '@/services/api/Apipath'
+import TokenService from '@/services/api/Tokenservice'
 import { useToast } from '@/hooks/use-toast'
 
-export default function VerifyEmail() {
-    const [otp, setOtp] = useState(['', '', '', ''])
-    const [loading, setLoading] = useState(false)
-    const inputRefs = useRef<(HTMLInputElement | null)[]>([])
+function VerifyEmailContent() {
+    const searchParams = useSearchParams()
+    const router = useRouter()
     const { showSuccess, showError } = useToast()
+    const token = searchParams.get('token')
+    const email = searchParams.get('email')
+
+    const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle')
 
     useEffect(() => {
-        if (inputRefs.current[0]) {
-            inputRefs.current[0].focus()
+        if (token && status === 'idle') {
+            verifyEmail(token)
         }
-    }, [])
+    }, [token, status])
 
-    const handleChange = (index: number, value: string) => {
-        // Only allow numbers
-        if (value && !/^\d+$/.test(value)) return
+    const verifyEmail = async (token: string) => {
+        setStatus('verifying')
+        try {
+            const response = await axiosInstance.get(`${API_PATH.AUTH.VerifyEmail}?token=${token}`)
 
-        const newOtp = [...otp]
-        newOtp[index] = value.substring(value.length - 1)
-        setOtp(newOtp)
+            const { accessToken, refreshToken, user } = response.data
 
-        // Move to next input if value is entered
-        if (value && index < 3 && inputRefs.current[index + 1]) {
-            inputRefs.current[index + 1]?.focus()
-        }
-    }
-
-    const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === 'Backspace' && !otp[index] && index > 0 && inputRefs.current[index - 1]) {
-            inputRefs.current[index - 1]?.focus()
-        }
-    }
-
-    const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
-        e.preventDefault()
-        const pastedData = e.clipboardData.getData('text').slice(0, 4).split('')
-        if (pastedData.every(char => /^\d+$/.test(char))) {
-            const newOtp = [...otp]
-            pastedData.forEach((char, index) => {
-                if (index < 4) newOtp[index] = char
+            TokenService.setUser({
+                ...user,
+                accessToken,
+                refreshToken
             })
-            setOtp(newOtp)
-            // Focus the last filled input or the first empty one
-            const nextEmptyIndex = newOtp.findIndex(val => val === '')
-            const focusIndex = nextEmptyIndex === -1 ? 3 : nextEmptyIndex
-            if (inputRefs.current[focusIndex]) {
-                inputRefs.current[focusIndex]?.focus()
-            }
+            TokenService.updateLocalAccessToken(accessToken)
+
+            setStatus('success')
+            showSuccess("Your email has been successfully verified. Redirecting...")
+
+            setTimeout(() => {
+                router.push('/dashboard')
+            }, 2000)
+
+        } catch (error: any) {
+            console.error(error)
+            setStatus('error')
+            showError(error.response?.data?.message || "Invalid or expired verification token.")
         }
     }
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-        setLoading(true)
-        const code = otp.join('')
-        console.log('Verifying code:', code)
-
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
-
-        setLoading(false)
-        showSuccess('Email verified successfully!')
-        // Handle success (redirect, toast, etc.)
+    if (status === 'verifying') {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                <Loader2 className="h-12 w-12 animate-spin text-(--color-blogane-yellow)" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Verifying your email...</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center">Please wait while we verify your email address.</p>
+            </div>
+        )
     }
 
-    const isComplete = otp.every(digit => digit !== '')
+    if (status === 'success') {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                <CheckCircle className="h-16 w-16 text-green-500" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Email Verified!</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center">Thank you for verifying your email.</p>
+                <p className="text-sm text-gray-400 animate-pulse">Redirecting to dashboard...</p>
+            </div>
+        )
+    }
+
+    if (status === 'error') {
+        return (
+            <div className="flex flex-col items-center justify-center space-y-4 py-8">
+                <XCircle className="h-16 w-16 text-red-500" />
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Failed</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                    The verification link is invalid or has expired.
+                </p>
+                <div className="flex gap-4 mt-4">
+                    <Link
+                        href="/sign-in"
+                        className="text-sm font-medium text-blue-600 hover:underline"
+                    >
+                        Back to Login
+                    </Link>
+                </div>
+            </div>
+        )
+    }
 
     return (
-        <AuthLayout>
+        <>
             <div className="flex flex-col space-y-2 mb-3">
                 <Link href="/" className="flex items-center gap-2 w-fit mb-4">
                     <div className="w-8 h-8 bg-(--color-blogane-yellow) rounded flex items-center justify-center text-black font-bold font-serif text-xl">
@@ -81,57 +103,36 @@ export default function VerifyEmail() {
                     </div>
                     <span className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">Genwrite</span>
                 </Link>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                    Verify your email
-                </h2>
-                <p className="text-gray-500 dark:text-gray-400">
-                    Enter the 4-digit code sent to your email address.
+            </div>
+
+            <div className="w-full p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                <h3 className="text-emerald-500 font-medium text-lg mb-1">
+                    Check your email
+                </h3>
+                <p className="text-emerald-500/90 text-sm">
+                    We have sent a verification link to <span className="font-medium">{email}</span>.
                 </p>
             </div>
 
-            <form className="space-y-8" onSubmit={handleSubmit}>
-                <div className="flex justify-center gap-4 sm:gap-6">
-                    {otp.map((digit, index) => (
-                        <input
-                            key={index}
-                            ref={(el) => { inputRefs.current[index] = el }}
-                            type="text"
-                            name={`otp-${index}`}
-                            maxLength={1}
-                            value={digit}
-                            onChange={(e) => handleChange(index, e.target.value)}
-                            onKeyDown={(e) => handleKeyDown(index, e)}
-                            onPaste={handlePaste}
-                            className="w-14 h-14 sm:w-16 sm:h-16 text-center text-2xl font-bold rounded-xl border border-gray-300 bg-white text-gray-900 shadow-sm focus:border-black focus:ring-1 focus:ring-black outline-none transition-all dark:bg-gray-900 dark:border-gray-700 dark:text-white dark:focus:border-white dark:focus:ring-white"
-                        />
-                    ))}
-                </div>
-
-                <button
-                    type="submit"
-                    disabled={loading || !isComplete}
-                    className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            <div className="flex justify-center mt-8">
+                <Link
+                    href="/sign-in"
+                    className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
                 >
-                    {loading ? 'Verifying...' : 'Verify Email'}
-                </button>
+                    <ArrowLeft size={16} className="mr-2" />
+                    Back to log in
+                </Link>
+            </div>
+        </>
+    )
+}
 
-                <div className="text-center text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">Didn't receive the code? </span>
-                    <button type="button" className="font-medium text-blue-600 hover:text-blue-500 hover:underline">
-                        Click to resend
-                    </button>
-                </div>
-
-                <div className="flex justify-center">
-                    <Link
-                        href="/sign-in"
-                        className="flex items-center text-sm font-medium text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors"
-                    >
-                        <ArrowLeft size={16} className="mr-2" />
-                        Back to log in
-                    </Link>
-                </div>
-            </form>
+export default function VerifyEmail() {
+    return (
+        <AuthLayout>
+            <Suspense fallback={<div className="flex justify-center p-8"><Loader2 className="animate-spin" /></div>}>
+                <VerifyEmailContent />
+            </Suspense>
         </AuthLayout>
     )
 }

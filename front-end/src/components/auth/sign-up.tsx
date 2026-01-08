@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Eye, EyeOff } from 'lucide-react'
 import axiosInstance from '@/services/api/axiosInstance'
 import { API_PATH } from '@/services/api/Apipath'
+import { ClerkSocialLogin } from './clerk-auth'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -29,7 +30,6 @@ export default function SignUp() {
     setLoading(true)
     setFieldErrors({})
 
-    // 1. Client-side Validation
     const result = signupSchema.safeParse(formData)
 
     if (!result.success) {
@@ -43,7 +43,6 @@ export default function SignUp() {
       return
     }
 
-    // 2. Submit to API
     try {
       const response = await axiosInstance.post(API_PATH.AUTH.SIGNUP, {
         username: formData.username,
@@ -52,14 +51,14 @@ export default function SignUp() {
       });
       console.log(response.data);
 
-      if (response.data.success) {
-        showSuccess('Account created! Redirecting...')
-        router.push('/verify-email')
+      if (response.status === 201 || response.data.success) {
+        showSuccess(response.data.message || 'Account created! Redirecting...');
+        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
       } else {
         showError(response.data.message || 'Failed to create account');
       }
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || 'Something went wrong during sign up'
+      const errorMessage = error.response?.data?.message || error.message || error
       showError(errorMessage);
       console.log(error);
     } finally {
@@ -164,6 +163,8 @@ export default function SignUp() {
               <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
             )}
           </div>
+
+
         </div>
 
         <button
@@ -184,25 +185,7 @@ export default function SignUp() {
         </div>
       </form>
 
-      {/* auth buttons */}
-      <div className="grid grid-cols-2 gap-4">
-        <button
-          // onClick={handleGoogleSignUp}
-          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-        >
-          <Image src="/google-logo.svg" alt="Google" width={20} height={20} className="mr-2" />
-          Google
-        </button>
-        <button
-          type="button"
-          className="flex items-center justify-center px-2 py-2 border border-gray-200 rounded-lg shadow-sm bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800 transition-colors"
-        >
-          <svg className="w-5 h-5 text-blue-600 mr-2" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-          </svg>
-          Facebook
-        </button>
-      </div>
+      <ClerkSocialLogin />
 
       <div className="mt-8 text-center text-sm">
         <span className="text-gray-500">Already have an account? </span>
