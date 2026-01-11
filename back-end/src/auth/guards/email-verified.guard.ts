@@ -4,7 +4,7 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import type { CurrentUserType } from '../decorators/current-user.decorator';
+import type { CurrentUserType } from '../../common/decorators/current-user.decorator';
 
 @Injectable()
 export class EmailVerifiedGuard implements CanActivate {

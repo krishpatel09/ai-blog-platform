@@ -5,36 +5,46 @@ import { TokenService } from '../services/token.service';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Request } from 'express';
 
-interface JwtPayload {
+interface RefreshJwtPayload {
   userId: string;
-  username: string;
-  email: string;
 }
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class RefreshJwtStrategy extends PassportStrategy(
+  Strategy,
+  'refresh-jwt',
+) {
   constructor(
     private prisma: PrismaService,
     private tokenService: TokenService,
   ) {
-    const secret = process.env.JWT_SECRET;
+    const secret = process.env.REFRESH_JWT_SECRET;
     if (!secret) {
-      throw new Error('JWT_SECRET environment variable is required');
+      throw new Error('REFRESH_JWT_SECRET environment variable is required');
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
+      jwtFromRequest: (req: Request) => {
+        return req?.cookies?.refreshToken;
+      },
       secretOrKey: secret,
       passReqToCallback: true,
     });
   }
 
-  async validate(req: Request, payload: JwtPayload) {
-    const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
+  async validate(req: Request, payload: RefreshJwtPayload) {
 
-    if (token && (await this.tokenService.revokeRefreshToken(token))) {
-      throw new UnauthorizedException('Token has been revoked');
+    const refreshToken = req?.cookies?.refreshToken;
+
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token missing');
+    }
+
+    const tokenRecord =
+      await this.tokenService.validateRefreshToken(refreshToken);
+
+    if (!tokenRecord) {
+      throw new UnauthorizedException('Invalid refresh token');
     }
 
     const user = await this.prisma.user.findUnique({
@@ -62,12 +72,10 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
 
     return {
       id: user.id,
+      refreshToken,
       username: user.username,
       email: user.email,
       emailVerified: user.security?.emailVerified || false,
     };
   }
 }
-
-
-

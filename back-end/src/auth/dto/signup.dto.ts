@@ -9,8 +9,8 @@ import {
 export class SignupDto {
   @IsNotEmpty()
   @IsString()
-  @MinLength(3, { message: 'Username must be at least 3 characters long' })
-  username: string;
+  @MinLength(3, { message: 'name must be at least 3 characters long' })
+  name: string;
 
   @IsEmail()
   @IsNotEmpty()

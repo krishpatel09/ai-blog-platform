@@ -1,15 +1,17 @@
-// // (Optional but Useful)
-// import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import { createParamDecorator, ExecutionContext } from '@nestjs/common';
+import type { Request } from 'express';
 
-// export const ClientIp = createParamDecorator(
-//   (_data: unknown, ctx: ExecutionContext): string | undefined => {
-//     const request = ctx.switchToHttp().getRequest();
-//     return (
-//       request.headers['x-forwarded-for'] ||
-//       request.socket?.remoteAddress
-//     );
-//   },
-// );
+export const ClientIp = createParamDecorator(
+  (data: unknown, ctx: ExecutionContext): string | undefined => {
+    const request = ctx.switchToHttp().getRequest<Request>();
 
-// @Post('login')
-// login(@ClientIp() ip: string) {}
+    const xForwardedFor = request.headers['x-forwarded-for'];
+
+    if (xForwardedFor) {
+      const ips = (xForwardedFor as string).split(',');
+      return ips[0].trim();
+    }
+
+    return request.ip || request.socket.remoteAddress || '0.0.0.0';
+  },
+);

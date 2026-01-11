@@ -1,42 +1,56 @@
-import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
+import { Injectable, OnModuleInit, OnModuleDestroy, Logger } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
-import { ConfigService } from '@nestjs/config';
-import { PrismaNeonHttp } from '@prisma/adapter-neon';
+import { PrismaNeon } from '@prisma/adapter-neon';
+import { Pool, neonConfig } from '@neondatabase/serverless';
+import { WebSocket } from 'ws';
 
 @Injectable()
-export class PrismaService
-  extends PrismaClient
-  implements OnModuleInit, OnModuleDestroy {
-  constructor(private readonly config: ConfigService) {
-    const databaseUrl = config.get<string>('DATABASE_URL');
-    if (databaseUrl) {
-      console.log('Initialize Prisma with URL length:', databaseUrl.length);
-      console.log('Host:', databaseUrl.split('@')[1]?.split('/')[0]);
+export class PrismaService extends PrismaClient implements OnModuleInit, OnModuleDestroy {
+  private readonly logger = new Logger(PrismaService.name);
+
+  constructor() {
+    // 1. Force fetch from process.env, with fallback loader
+    if (!process.env.DATABASE_URL) {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      require('dotenv').config();
+    }
+    const connectionString = process.env.DATABASE_URL;
+
+    // IMPORTANT DEBUG LOG
+    console.log('------------------------------------------------');
+    console.log('DEBUG: Connection string length:', connectionString ? connectionString.length : 'NULL/UNDEFINED');
+    console.log('DEBUG: Connection string starts with:', connectionString ? connectionString.substring(0, 15) + '...' : 'N/A');
+    console.log('DEBUG: WebSocket constructor type:', typeof WebSocket);
+    console.log('------------------------------------------------');
+
+    if (!connectionString) {
+      throw new Error('DATABASE_URL is not defined in the environment. Please check your .env file.');
     }
 
-    if (!databaseUrl || databaseUrl.trim() === '') {
-      throw new Error('DATABASE_URL is required');
-    }
+    // 2. Configure Neon to use WebSockets
+    neonConfig.webSocketConstructor = WebSocket;
 
-    // Create Neon HTTP adapter for Prisma 7.x
-    // PrismaNeonHttp uses HTTP connections (good for serverless)
-    const neonAdapter = new PrismaNeonHttp(databaseUrl, {
-      arrayMode: false,
-      fullResults: false,
-    });
+    // 3. Initialize Pool with explicit connectionString property
+    const pool = new Pool({ connectionString });
 
-    super({
-      adapter: neonAdapter,
-    });
+    // 4. Initialize Adapter
+    const adapter = new PrismaNeon(pool as any);
+
+    // 5. Pass to PrismaClient
+    super({ adapter });
   }
 
   async onModuleInit() {
-    await this.$connect();
-    console.log('Prisma connected to Neon PostgreSQL');
+    try {
+      await this.$connect();
+      this.logger.log('✅ Prisma connected to Neon successfully');
+    } catch (error) {
+      this.logger.error('❌ Prisma connection failed');
+      console.error(error);
+    }
   }
 
   async onModuleDestroy() {
     await this.$disconnect();
-    console.log('Prisma disconnected from Neon PostgreSQL');
   }
 }

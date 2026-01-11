@@ -57,10 +57,12 @@ export default function SignUp() {
       } else {
         showError(response.data.message || 'Failed to create account');
       }
-    } catch (error: any) {
-      const errorMessage = error.response?.data?.message || error.message || error
-      showError(errorMessage);
-      console.log(error);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create account'
+      showError(errorMessage as string);
+      console.log(errorMessage);
     } finally {
       setLoading(false)
     }

@@ -3,12 +3,19 @@ import { setDefaultResultOrder } from 'dns';
 import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
+import cookieParser from 'cookie-parser';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 
 async function bootstrap() {
   setDefaultResultOrder('ipv4first');
   const app = await NestFactory.create(AppModule);
 
-  // Security
+  //Global config
+  app.setGlobalPrefix('api');
+  app.use(cookieParser());
   app.use(helmet());
 
   app.enableCors({
@@ -21,11 +28,32 @@ async function bootstrap() {
       whitelist: true,
       forbidNonWhitelisted: true,
       transform: true,
+      transformOptions: { enableImplicitConversion: true },
     }),
   );
+  app.useGlobalFilters(
+    new HttpExceptionFilter(),
+    new PrismaExceptionFilter()
+  );
 
-  // Global prefix
-  app.setGlobalPrefix('api');
+  app.useGlobalInterceptors(
+    new LoggingInterceptor(),
+    new TransformInterceptor()
+  );
+
+  // // --- 5. Swagger API Documentation ---
+  // if (process.env.NODE_ENV !== 'production') {
+  //   const config = new DocumentBuilder()
+  //     .setTitle('Genwrite AI Blog Platform')
+  //     .setDescription('The official API documentation for Genwrite AI platform')
+  //     .setVersion('1.0')
+  //     .addBearerAuth()
+  //     .build();
+  //   const document = SwaggerModule.createDocument(app, config);
+  //   SwaggerModule.setup('docs', app, document);
+  //   logger.log('🚀 Swagger documentation available at /docs');
+  // }
+
 
   await app.listen(process.env.PORT || 3000);
   console.log(

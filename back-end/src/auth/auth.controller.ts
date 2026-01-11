@@ -3,89 +3,107 @@ import {
   Post,
   Body,
   Get,
-  UseGuards,
-  Ip,
   Headers,
   Req,
   Query,
+  Res,
+  UseGuards,
 } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
-import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
-import { EmailVerifiedGuard } from '../common/guards/email-verified.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
-import type { CurrentUserType } from '../common/decorators/current-user.decorator';
+import { ClientIp } from '../common/decorators/ip.decorator';
 import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
-import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import type { Request } from 'express';
+import type { Request, Response } from 'express';
+import { Public } from '../common/decorators/public.decorator';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
+  private setRefreshTokenCookie(res: Response, refreshToken: string) {
+    res.cookie('refreshToken', refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+  }
+
+  @Public()
   @Post('signup')
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // 3 signups per minute
   async signup(
     @Body() dto: SignupDto,
-    @Ip() ip: string,
+    @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.signup(dto, ip, userAgent);
   }
 
+  @Public()
   @Post('signin')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async signin(
     @Body() dto: SigninDto,
-    @Ip() ip: string,
+    @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.signin(dto, ip, userAgent);
-  }
-
-  @Post('logout')
-  async logout(
-    @Body() dto: RefreshTokenDto,
-    @Req() req: Request,
-    @Ip() ip: string,
-    @Headers('user-agent') userAgent: string,
-  ) {
-    const accessToken = req.headers.authorization?.replace('Bearer ', '');
-    return this.authService.logout(
-      dto.refreshToken,
-      accessToken,
+    const { refreshToken, accessToken, user } = await this.authService.signin(
+      dto,
       ip,
       userAgent,
     );
+    this.setRefreshTokenCookie(res, refreshToken);
+    return { accessToken, user };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(
+    @Req() req: Request,
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = (req.cookies?.refreshToken as string) || '';
+    const result = await this.authService.logout(refreshToken, ip, userAgent);
+    res.clearCookie('refreshToken');
+    return result;
+  }
+
+  @UseGuards(RefreshTokenGuard)
   @Post('refresh')
-  @Throttle({ default: { limit: 10, ttl: 60000 } })
   async refresh(
     @Body() dto: RefreshTokenDto,
-    @Ip() ip: string,
+    @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.refreshToken(dto, ip, userAgent);
+    const { refreshToken, accessToken, user } =
+      await this.authService.refreshToken(dto, ip, userAgent);
+    this.setRefreshTokenCookie(res, refreshToken);
+    return { accessToken, user };
   }
 
+  @Public()
   @Get('verify-email')
-  async verifyEmail(@Query('token') token: string) {
-    return this.authService.verifyEmail(token);
+  async verifyEmail(
+    @Query('token') token: string,
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.verifyEmail(token, ip, userAgent);
   }
 
   @Post('resend-verification')
-  @Throttle({ default: { limit: 3, ttl: 300000 } })
-  async resendVerification(@Body() dto: ResendVerificationDto) {
-    return this.authService.resendVerificationEmail(dto.email);
-  }
-
-  @Get('me')
-  @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
-  getCurrentUser(@CurrentUser() user: CurrentUserType) {
-    return user;
+  async resendVerification(
+    @Body() dto: ResendVerificationDto,
+    @ClientIp() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.resendVerificationEmail(dto.email, ipAddress, userAgent);
   }
 }

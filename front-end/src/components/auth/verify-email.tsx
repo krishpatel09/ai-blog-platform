@@ -49,7 +49,7 @@ function VerifyEmailContent() {
         } catch (error: any) {
             console.error(error)
             setStatus('error')
-            showError(error.response?.data?.message || "Invalid or expired verification token.")
+            showError(error.response?.data?.message);
         }
     }
 

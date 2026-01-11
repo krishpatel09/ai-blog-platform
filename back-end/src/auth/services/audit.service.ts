@@ -1,20 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { Logger } from '@nestjs/common';
 
 @Injectable()
 export class AuditService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(AuditService.name);
+
+  constructor(private prisma: PrismaService) { }
 
   async log(data: {
     userId?: string;
     action: string;
     ipAddress?: string;
     userAgent?: string;
-    details?: string;
+    details?: any;
     success?: boolean;
   }) {
     try {
-      await (this.prisma as any).auditLog.create({
+      await this.prisma.auditLog.create({
         data: {
           userId: data.userId,
           action: data.action,
@@ -25,17 +28,9 @@ export class AuditService {
         },
       });
     } catch (error) {
-      console.error('Audit log failed:', error);
+      this.logger.error(`Audit logging failed: ${error.message}`);
     }
   }
 
-  async getUserActivity(userId: string, limit = 50) {
-    return await (this.prisma as any).auditLog.findMany({
-      where: { userId },
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-    });
-  }
 
- 
 }

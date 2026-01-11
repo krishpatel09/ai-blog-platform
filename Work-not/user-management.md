@@ -1,10 +1,7 @@
-generator client {
-  provider = "prisma-client-js"
-}
+# User Management & Authentication Schema
 
-datasource db {
-  provider = "postgresql"
-}
+Aa schema focus kare che Secure Login, Token Management, ane Audit Logging par.
+
 
 model User {
   id          String   @id @default(uuid())
@@ -40,23 +37,24 @@ model RefreshToken {
   token     String   @unique @db.VarChar(128)
   userId    String
   expiresAt DateTime
-  isRevoked Boolean  @default(false)
+  isRevoked Boolean  @default(false) // Security Guard: Token radd karva mate
   createdAt DateTime @default(now())
   
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token, isRevoked]) 
+  @@index([token, isRevoked]) // Query Fast karva mate
 }
 
+// 4. Audit Log:
 model AuditLog {
   id            String   @id @default(uuid())
   userId        String?
-  action        String   @db.VarChar(50)
+  action        String   @db.VarChar(50) // SIGNUP, LOGIN, LOGOUT, FAILED_ATTEMPT
   ipAddress     String?  @db.VarChar(45)
   userAgent     String?  @db.VarChar(500)
   success       Boolean  @default(true)
-  details       Json?    
+  details       Json?    // Extra info jem ke "Incorrect Password"
   createdAt     DateTime @default(now())
 
   user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -64,3 +62,4 @@ model AuditLog {
   @@index([userId])
   @@index([action, createdAt])
 }
+

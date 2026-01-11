@@ -1,6 +1,6 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface CurrentUserType {
-  id: string;
+  userId: string;
   username: string;
   email: string;
   emailVerified: boolean;
@@ -13,8 +13,4 @@ export const CurrentUser = createParamDecorator(
   },
 );
 
-// Use case
-// @Get('me')
-// getProfile(@CurrentUser() user: CurrentUserType) {
-//   return user;
-// }
+

@@ -1,26 +1,23 @@
-import {
-  Injectable,
-  UnauthorizedException,
-  OnModuleInit,
-  OnModuleDestroy,
-} from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../../prisma/prisma.service';
 import * as crypto from 'crypto';
+
+interface JwtPayload {
+  userId: string;
+  username: string;
+  email: string;
+}
 
 @Injectable()
 export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-  ) {}
+  ) { }
 
   //access token
-  generateAccessToken(payload: {
-    userId: string;
-    username: string;
-    email: string;
-  }): string {
+  generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
       expiresIn: '15m',
       secret: process.env.JWT_SECRET,
@@ -28,9 +25,7 @@ export class TokenService {
   }
 
   //refresh token
-  async generateRefreshToken(
-    userId: string,
-  ):Promise<string> {
+  async generateRefreshToken(userId: string): Promise<string> {
     const token = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -46,19 +41,23 @@ export class TokenService {
 
     return token;
   }
-  
+
   // Validate refresh token
   async validateRefreshToken(token: string) {
     const refreshToken = await this.prisma.refreshToken.findUnique({
-      where: { token },
+      where: { token, isRevoked: false, expiresAt: { gte: new Date() } },
       include: {
         user: {
           select: {
             id: true,
             username: true,
             email: true,
-            emailVerified: true,
             isActive: true,
+            security: {
+              select: {
+                emailVerified: true,
+              },
+            },
           },
         },
       },
@@ -67,7 +66,7 @@ export class TokenService {
     if (!refreshToken) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    
+
     if (refreshToken.isRevoked) {
       throw new UnauthorizedException('Refresh token has been revoked');
     }
@@ -76,8 +75,6 @@ export class TokenService {
       await this.deleteRefreshToken(token);
       throw new UnauthorizedException('Refresh token expired');
     }
-
-
     return refreshToken;
   }
 
@@ -94,13 +91,13 @@ export class TokenService {
   async cleanupExpiredTokens(): Promise<void> {
     await this.prisma.refreshToken.deleteMany({
       where: {
-        expiresAt: { lt: new Date() },
+        OR: [{ expiresAt: { lt: new Date() } }, { isRevoked: true }],
       },
     });
   }
 
   // Revoke refresh token
-  async revokeRefreshToken(token: string): Promise<void>{
+  async revokeRefreshToken(token: string): Promise<void> {
     await this.prisma.refreshToken.updateMany({
       where: {
         token,
@@ -109,11 +106,15 @@ export class TokenService {
       data: {
         isRevoked: true,
       },
-    })
+    });
   }
 
-  generateEmailVerificationToken(): string {
-    return crypto.randomBytes(32).toString('hex');
-  }
+  generateEmailVerificationToken() {
+    const token = crypto.randomBytes(32).toString('hex');
 
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+
+    return { token, expiresAt }
+  };
 }
