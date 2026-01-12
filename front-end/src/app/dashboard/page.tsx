@@ -30,6 +30,7 @@ export default function Dashboard() {
                 console.error("Clerk signOut failed:", clerkError);
                 router.push('/sign-in');
             } finally {
+                window.location.href = '/sign-in';
                 setLoading(false);
             }
         }

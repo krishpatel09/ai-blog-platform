@@ -6,10 +6,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { AppModule } from './app.module';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { HttpExceptionFilter } from './common/filters/http-exception.filter';
-import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
-import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { CookieInterceptor } from './common/interceptors/cookie.interceptor';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
@@ -45,10 +42,9 @@ async function bootstrap() {
   //   new PrismaExceptionFilter()
   // );
 
-  // app.useGlobalInterceptors(
-  //   new LoggingInterceptor(),
-  //   new TransformInterceptor()
-  // );
+  app.useGlobalInterceptors(
+    new CookieInterceptor(),
+  );
 
   // // --- 5. Swagger API Documentation ---
   // if (process.env.NODE_ENV !== 'production') {

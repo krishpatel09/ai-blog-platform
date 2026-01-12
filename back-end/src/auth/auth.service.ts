@@ -89,14 +89,6 @@ export class AuthService {
       return {
         success: true,
         message: 'Registration successful. Please verify your email.',
-        data: {
-          user: {
-            id: result.id,
-            username: result.username,
-            email: result.email,
-            emailVerified: result.security?.emailVerified || false,
-          },
-        },
       };
     } catch (error) {
       console.error('Signup error:', error);
@@ -106,7 +98,7 @@ export class AuthService {
   }
 
   async signin(signinDto: SigninDto, ipAddress?: string, userAgent?: string) {
-    const { email, password, rememberMe = false } = signinDto;
+    const { email, password, rememberMe } = signinDto;
 
     console.log('signinDto', signinDto);
     try {
@@ -249,7 +241,6 @@ export class AuthService {
           success: true,
           data: {
             accessToken,
-            refreshToken: newRefreshToken,
             user: {
               id: oldRefreshToken.user.id,
               username: oldRefreshToken.user.username,
@@ -297,7 +288,7 @@ export class AuthService {
       email: userSecurity.user.email,
     });
 
-    const { token: refreshToken } = await this.tokenService.generateRefreshToken(
+    const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
       userSecurity.user.id,
       false,
     );
@@ -309,13 +300,14 @@ export class AuthService {
       userAgent,
       success: true,
     });
-
+    console.log("Email verified successfully");
     return {
       success: true,
       message: 'Email verified successfully',
       data: {
         accessToken,
         refreshToken,
+        expiresInMs,
         user: {
           id: userSecurity.user.id,
           username: userSecurity.user.username,

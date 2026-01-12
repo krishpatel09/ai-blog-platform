@@ -6,10 +6,11 @@ export function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
 
     const protectedPaths = ['/dashboard', '/profile', '/settings'];
-    const authPaths = ['/sign-in', '/sign-up', '/verify-email'];
+    const authPaths = ['/sign-in', '/sign-up'];
 
     const isProtected = protectedPaths.some(path => pathname.startsWith(path));
     const isAuthPath = authPaths.includes(pathname);
+
     if (isProtected && !token) {
         const loginUrl = new URL('/sign-in', request.url);
         loginUrl.searchParams.set('from', pathname);
@@ -22,6 +23,10 @@ export function middleware(request: NextRequest) {
     if (isAuthPath && token) {
         return NextResponse.redirect(new URL('/dashboard', request.url));
     }
+    if (pathname.startsWith('/verify-email')) {
+        return NextResponse.next();
+    }
+
     return NextResponse.next();
 }
 

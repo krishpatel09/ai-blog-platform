@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useState, Suspense } from 'react'
+import React, { useEffect, useState, useRef, Suspense } from 'react'
 import Link from 'next/link'
 import AuthLayout from './Layout'
 import { ArrowLeft, Loader2, CheckCircle, XCircle } from 'lucide-react'
@@ -18,33 +18,79 @@ function VerifyEmailContent() {
     const token = searchParams.get('token')
     const email = searchParams.get('email')
 
-    const { updateUser } = useAuth()
+    const { login } = useAuth()
     const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error' | 'updating'>('idle')
+    const [resendStatus, setResendStatus] = useState<'idle' | 'sending' | 'sent'>('idle')
+    const [cooldown, setCooldown] = useState(0)
 
+    // FIX: Infinite loop prevention using useRef guard
+    // Without this, the useEffect would trigger verifyEmail() → setStatus('success') → re-render → useEffect runs again → infinite loop
+    // useRef persists across re-renders but doesn't trigger re-renders when changed
+    const hasVerified = useRef(false)
+
+    // REFACTOR: Email verification effect with infinite loop protection
     useEffect(() => {
-        if (token && status === 'idle') {
+        // FIX: Check hasVerified.current BEFORE calling verifyEmail to prevent multiple API calls
+        if (token && status === 'idle' && !hasVerified.current) {
+            hasVerified.current = true; // Set immediately to prevent race conditions
             verifyEmail(token)
         }
     }, [token, status])
 
+    useEffect(() => {
+        if (cooldown > 0) {
+            const timer = setTimeout(() => setCooldown(cooldown - 1), 1000)
+            return () => clearTimeout(timer)
+        }
+    }, [cooldown])
+
     const verifyEmail = async (token: string) => {
+        // FIX: Additional safety check - if already successful, don't verify again
+        if (status === 'success') return;
+
         setStatus('verifying')
         try {
-            const response = await axiosInstance.get(`${API_PATH.AUTH.VerifyEmail}?token=${token}`)
-            setStatus('success')
-            showSuccess(response.data.messages || "Email verified successfully!")
-            updateUser({
-                emailVerified: true,
-                accessToken: response.data?.accessToken
-            })
-            setTimeout(() => {
-                router.push('/dashboard')
-            }, 2000)
+            const response = await axiosInstance.get(`${API_PATH.AUTH.VERIFY_EMAIL}?token=${token}`)
 
+            const { success, message, data } = response.data;
+
+            if (success && data?.accessToken && data?.user) {
+                setStatus('success')
+                showSuccess(message || "Email verified successfully!")
+
+                // REFACTOR: Proper data flow for authentication after email verification
+                // 1. Wait 2 seconds for user to see success message
+                // 2. Call login() which stores user + token in localStorage AND updates AuthContext state
+                // 3. Redirect to dashboard AFTER login completes
+                // This ensures middleware can detect authentication before redirect happens
+                setTimeout(() => {
+                    login(data.user, data.accessToken)
+                    router.push('/dashboard')
+                }, 2000)
+            }
+        } catch (error: any) {
+            console.error('Email verification error:', error)
+            setStatus('error')
+            showError(error.response?.data?.message || error.message);
+        }
+    }
+
+    const resendVerificationEmail = async () => {
+
+        setResendStatus('sending')
+        try {
+            const response = await axiosInstance.post(API_PATH.AUTH.RESEND_EMAIL_VERIFICATION,
+                { email },
+                { headers: { 'X-Skip-Interceptor': 'true' } }
+            );
+            setResendStatus('sent')
+            showSuccess(response.data.message || "Verification email sent successfully!")
+            setCooldown(60)
+            setTimeout(() => setResendStatus('idle'), 3000)
         } catch (error: any) {
             console.error(error)
-            setStatus('error')
-            showError(error.response?.data?.message);
+            setResendStatus('idle')
+            showError(error.response?.data?.message || "Failed to resend verification email")
         }
     }
 
@@ -77,10 +123,30 @@ function VerifyEmailContent() {
                 <p className="text-gray-500 dark:text-gray-400 text-center">
                     The verification link is invalid or has expired.
                 </p>
-                <div className="flex gap-4 mt-4">
+                <div className="flex flex-col gap-3 mt-4 w-full max-w-xs">
+                    {email && (
+                        <button
+                            onClick={resendVerificationEmail}
+                            disabled={resendStatus === 'sending' || cooldown > 0}
+                            className="w-full px-4 py-2 bg-(--color-blogane-yellow) text-black font-medium rounded-lg hover:bg-(--color-blogane-yellow)/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                        >
+                            {resendStatus === 'sending' ? (
+                                <>
+                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                    Sending...
+                                </>
+                            ) : cooldown > 0 ? (
+                                `Resend in ${cooldown}s`
+                            ) : resendStatus === 'sent' ? (
+                                'Email Sent!'
+                            ) : (
+                                'Resend Verification Email'
+                            )}
+                        </button>
+                    )}
                     <Link
                         href="/sign-in"
-                        className="text-sm font-medium text-blue-600 hover:underline"
+                        className="text-sm font-medium text-blue-600 hover:underline text-center"
                     >
                         Back to Login
                     </Link>
@@ -108,6 +174,32 @@ function VerifyEmailContent() {
                     We have sent a verification link to <span className="font-medium">{email}</span>.
                 </p>
             </div>
+
+            {email && (
+                <div className="mt-6 flex flex-col items-center gap-3">
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Didn't receive the email?
+                    </p>
+                    <button
+                        onClick={resendVerificationEmail}
+                        disabled={resendStatus === 'sending' || cooldown > 0}
+                        className="px-6 py-2 bg-(--color-blogane-yellow) text-black font-medium rounded-lg hover:bg-(--color-blogane-yellow)/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                    >
+                        {resendStatus === 'sending' ? (
+                            <>
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                                Sending...
+                            </>
+                        ) : cooldown > 0 ? (
+                            `Resend in ${cooldown}s`
+                        ) : resendStatus === 'sent' ? (
+                            'Email Sent!'
+                        ) : (
+                            'Resend Email'
+                        )}
+                    </button>
+                </div>
+            )}
 
             <div className="flex justify-center mt-8">
                 <Link

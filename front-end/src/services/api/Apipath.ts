@@ -2,9 +2,11 @@ export const API_PATH = {
 
     AUTH: {
         SIGNUP: "/api/auth/signup",
-        VerifyEmail: "/api/auth/verify-email",
-        RESEND_EMAIL_VERIFICATION: "/api/auth/resend-email-verification",
+        VERIFY_EMAIL: "/api/auth/verify-email",
+        RESEND_EMAIL_VERIFICATION: "/api/auth/resend-verification",
         LOGIN: "/api/auth/signin",
         LOGOUT: "/api/auth/logout",
+        REFRESH_TOKEN: "/api/auth/refresh-token",
     }
-}   
+}
+

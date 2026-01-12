@@ -15,7 +15,7 @@ import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import type { Request, Response } from 'express';
+import type { Response } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -24,82 +24,44 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
-  private setRefreshTokenCookie(res: Response, refreshToken: string, maxAge: number) {
-    res.cookie('refreshToken', refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge,
-    });
-  }
-
   @Public()
   @Post('signup')
-  async signup(
-    @Body() dto: SignupDto,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-  ) {
+  async signup(@Body() dto: SignupDto, @ClientIp() ip: string, @Headers('user-agent') userAgent: string) {
     return this.authService.signup(dto, ip, userAgent);
   }
 
   @Public()
   @Post('signin')
-  async signin(
-    @Body() dto: SigninDto,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-    @Res({ passthrough: true }) res: Response,
+  async signin(@Body() dto: SigninDto, @ClientIp() ip: string, @Headers('user-agent') userAgent: string,
   ) {
-    const result = await this.authService.signin(dto, ip, userAgent);
-    const { accessToken, refreshToken, expiresInMs, user } = result.data;
-    this.setRefreshTokenCookie(res, refreshToken, expiresInMs);
-    return { accessToken, user };
+    return this.authService.signin(dto, ip, userAgent);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
-  async logout(
-    @Req() req: any,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-    @Res({ passthrough: true }) res: Response,
+  async logout(@Req() req: any, @ClientIp() ip: string, @Headers('user-agent') userAgent: string,
   ) {
-    const refreshToken = (req.cookies?.refreshToken as string) || '';
-    const userId = req.user?.id;
-    const result = await this.authService.logout(refreshToken, ip, userAgent);
-    res.clearCookie('refreshToken');
-    return result;
+    return this.authService.logout(req.user.id, req.cookies.refreshToken, ip, userAgent);
+
   }
 
   @UseGuards(RefreshTokenGuard)
-  @Post('refresh')
-  async refresh(
-    @Body() dto: RefreshTokenDto,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-    @Res({ passthrough: true }) res: Response,
+  @Post('refresh-token')
+  async refresh(@Body() dto: RefreshTokenDto, @ClientIp() ip: string, @Headers('user-agent') userAgent: string,
   ) {
-    const result = await this.authService.refreshToken(dto, ip, userAgent);
-    const { refreshToken, accessToken, user } = result.data;
-    return { accessToken, user };
+    return this.authService.refreshToken(dto, ip, userAgent);
   }
 
   @Public()
   @Get('verify-email')
-  async verifyEmail(
-    @Query('token') token: string,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
+  async verifyEmail(@Query('token') token: string, @ClientIp() ip: string, @Headers('user-agent') userAgent: string, @Res({ passthrough: true }) res: Response,
   ) {
     return this.authService.verifyEmail(token, ip, userAgent);
   }
 
+  @Public()
   @Post('resend-verification')
-  async resendVerification(
-    @Body() dto: ResendVerificationDto,
-    @ClientIp() ipAddress: string,
-    @Headers('user-agent') userAgent: string,
+  async resendVerification(@Body() dto: ResendVerificationDto, @ClientIp() ipAddress: string, @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.resendVerificationEmail(dto.email, ipAddress, userAgent);
   }

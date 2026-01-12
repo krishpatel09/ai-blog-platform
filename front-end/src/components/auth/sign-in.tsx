@@ -44,21 +44,22 @@ export default function SignIn() {
     }
 
     try {
+      console.log("Sign-in request", {
+        email,
+        password,
+        rememberMe
+      });
       const response = await axiosInstance.post(`${API_PATH.AUTH.LOGIN}`, {
         email,
         password,
         rememberMe
       });
-
       const { success, message, data } = response.data;
 
       if (success) {
-        const userData = {
-          ...data.user,
-          accessToken: data.accessToken
-        };
-        login(userData, rememberMe)
+        login(data.user, data.accessToken)
         showSuccess(message)
+        console.log("Sign-in response", response.data);
         router.replace('/dashboard')
       } else {
         showError(message)

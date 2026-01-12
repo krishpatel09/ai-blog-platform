@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signupSchema, type SignupInput } from '@/lib/zod/auth/auth.Schema'
 import { useToast } from '@/hooks/use-toast'
-import Image from 'next/image'
 import Link from 'next/link'
 import AuthLayout from './Layout'
 import { Input } from '@/components/ui/input'
@@ -12,7 +11,6 @@ import { Eye, EyeOff } from 'lucide-react'
 import axiosInstance from '@/services/api/axiosInstance'
 import { API_PATH } from '@/services/api/Apipath'
 import { ClerkSocialLogin } from './clerk-auth'
-import { useAuth } from '@/context/AuthContext'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
@@ -25,8 +23,6 @@ export default function SignUp() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof SignupInput, string>>>({})
   const router = useRouter()
   const { showSuccess, showError } = useToast()
-  const { login } = useAuth()
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -51,25 +47,18 @@ export default function SignUp() {
         email: formData.email,
         password: formData.password
       });
-      console.log(response.data);
+      console.log("Sign-up response", response.data);
 
       if (response.status === 201 || response.data.success) {
         showSuccess(response.data.message || 'Account created! Redirecting...');
         router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
-        const userData = {
-          ...response.data.user,
-          accessToken: response.data.accessToken
-        };
-        login(userData, false)
       } else {
         showError(response.data.message || 'Failed to create account');
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Failed to create account'
-      showError(errorMessage as string);
-      console.log(errorMessage);
+    } catch (error: any) {
+      console.error(error)
+      const errorMessage = error.data?.message || error.message
+      showError(errorMessage)
     } finally {
       setLoading(false)
     }
