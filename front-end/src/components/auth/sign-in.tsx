@@ -12,6 +12,7 @@ import { ClerkSocialLogin } from './clerk-auth'
 import axiosInstance from '@/services/api/axiosInstance'
 import { API_PATH } from '@/services/api/Apipath'
 import TokenService from '@/services/api/Tokenservice'
+import { useAuth } from '@/context/AuthContext'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -22,6 +23,7 @@ export default function SignIn() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof LoginInput, string>>>({})
   const router = useRouter()
   const { showSuccess, showError } = useToast()
+  const { login } = useAuth()
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,25 +44,28 @@ export default function SignIn() {
     }
 
     try {
-      const response = await axiosInstance.post(`${API_PATH.AUTH.LOGIN}`, { email, password });
+      const response = await axiosInstance.post(`${API_PATH.AUTH.LOGIN}`, {
+        email,
+        password,
+        rememberMe
+      });
 
-      if (response.data.success) {
-        if (response.data.data) {
-          TokenService.setUser(response.data.data);
-        } else if (response.data.user) {
-          TokenService.setUser(response.data.user);
-        } else {
-          TokenService.setUser(response.data);
-        }
+      const { success, message, data } = response.data;
 
-        showSuccess(response.data.message)
-        router.push('/dashboard')
+      if (success) {
+        const userData = {
+          ...data.user,
+          accessToken: data.accessToken
+        };
+        login(userData, rememberMe)
+        showSuccess(message)
+        router.replace('/dashboard')
       } else {
-        showError(response.data.message)
+        showError(message)
       }
     } catch (error: any) {
       console.error(error)
-      const errorMessage = error.response?.data?.message || error.message || error
+      const errorMessage = error.response?.data?.message || error.message
       showError(errorMessage)
     } finally {
       setLoading(false)

@@ -13,8 +13,8 @@ import { AuditService } from '../auth/services/audit.service';
 export class UsersService {
   constructor(
     private prisma: PrismaService,
-    private auditService: AuditService
-  ) { }
+    private auditService: AuditService,
+  ) {}
 
   // Get user profile
   async getProfile(userId: string) {

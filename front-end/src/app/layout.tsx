@@ -3,6 +3,7 @@ import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { ClerkProvider } from '@clerk/nextjs'
+import { AuthProvider } from "@/components/providers/AuthProvider";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space",
@@ -32,7 +33,9 @@ export default function RootLayout({
         <body
           className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-(--color-ai-bg) text-(--color-ai-text)`}
         >
-          {children}
+          <AuthProvider>
+            {children}
+          </AuthProvider>
           <Toaster position="top-right" />
         </body>
       </html >

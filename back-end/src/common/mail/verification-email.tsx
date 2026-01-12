@@ -88,5 +88,5 @@ const btnSection = { margin: "30px 0", textAlign: "center" as const };
 const button = { backgroundColor: "#F59E0B", color: "#000000", padding: "14px 28px", textDecoration: "none", fontSize: "16px", fontWeight: "600", borderRadius: "6px", display: "inline-block" };
 const subtext = { fontSize: "13px", color: "#6b7280" };
 const hr = { border: "none", borderTop: "1px solid #e5e7eb" };
-const footer = { padding: "20px 35px" };
-const footerText = { fontSize: "12px", color: "#6b7280" };
+const footer = { padding: "20px 35px 0" };
+const footerText = { fontSize: "12px", color: "#6b7280", textAlign: "center" as const };

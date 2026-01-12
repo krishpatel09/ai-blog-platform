@@ -9,6 +9,7 @@ import axiosInstance from '@/services/api/axiosInstance'
 import { API_PATH } from '@/services/api/Apipath'
 import TokenService from '@/services/api/Tokenservice'
 import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/context/AuthContext'
 
 function VerifyEmailContent() {
     const searchParams = useSearchParams()
@@ -17,7 +18,8 @@ function VerifyEmailContent() {
     const token = searchParams.get('token')
     const email = searchParams.get('email')
 
-    const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error'>('idle')
+    const { updateUser } = useAuth()
+    const [status, setStatus] = useState<'idle' | 'verifying' | 'success' | 'error' | 'updating'>('idle')
 
     useEffect(() => {
         if (token && status === 'idle') {
@@ -29,19 +31,12 @@ function VerifyEmailContent() {
         setStatus('verifying')
         try {
             const response = await axiosInstance.get(`${API_PATH.AUTH.VerifyEmail}?token=${token}`)
-
-            const { accessToken, refreshToken, user } = response.data
-
-            TokenService.setUser({
-                ...user,
-                accessToken,
-                refreshToken
-            })
-            TokenService.updateLocalAccessToken(accessToken)
-
             setStatus('success')
-            showSuccess("Your email has been successfully verified. Redirecting...")
-
+            showSuccess(response.data.messages || "Email verified successfully!")
+            updateUser({
+                emailVerified: true,
+                accessToken: response.data?.accessToken
+            })
             setTimeout(() => {
                 router.push('/dashboard')
             }, 2000)

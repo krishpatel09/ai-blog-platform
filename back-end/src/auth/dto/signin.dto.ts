@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, MaxLength, IsString } from 'class-validator';
+import { IsEmail, IsNotEmpty, MaxLength, IsString, IsBoolean, IsOptional } from 'class-validator';
 
 export class SigninDto {
   @IsEmail()
@@ -11,4 +11,8 @@ export class SigninDto {
     message: 'Password is required',
   })
   readonly password: string;
+
+  @IsBoolean()
+  @IsOptional()
+  readonly rememberMe?: boolean;
 }

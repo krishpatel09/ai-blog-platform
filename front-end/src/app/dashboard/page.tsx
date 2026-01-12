@@ -19,24 +19,21 @@ export default function Dashboard() {
         try {
             await axiosInstance.post(API_PATH.AUTH.LOGOUT);
             showSuccess('Logged out successfully');
-        } catch (error: unknown) {
-            const errorMessage = error instanceof Error
-                ? error.message
-                : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Logout failed';
-            showError(errorMessage as string);
-            console.error("Logout failed:", error);
+        } catch (error: any) {
+            console.error("Backend logout failed:", error);
         } finally {
             TokenService.removeUser();
-            setLoading(false);
-            // Sign out from Clerk and redirect
             try {
-                await signOut({ redirectUrl: '/sign-in' });
-            } catch {
-                // If Clerk signOut fails, manually redirect
+                await signOut();
                 router.push('/sign-in');
+            } catch (clerkError) {
+                console.error("Clerk signOut failed:", clerkError);
+                router.push('/sign-in');
+            } finally {
+                setLoading(false);
             }
         }
-    };
+    }
 
     return (
         <div className="p-4">

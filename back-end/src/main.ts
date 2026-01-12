@@ -1,3 +1,5 @@
+import * as dotenv from 'dotenv';
+dotenv.config();
 import { NestFactory } from '@nestjs/core';
 import { setDefaultResultOrder } from 'dns';
 import { ValidationPipe } from '@nestjs/common';
@@ -8,9 +10,16 @@ import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { PrismaExceptionFilter } from './common/filters/prisma-exception.filter';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { TransformInterceptor } from './common/interceptors/transform.interceptor';
+import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
   setDefaultResultOrder('ipv4first');
+  const logger = new Logger('Bootstrap');
+  if (!process.env.DATABASE_URL) {
+    logger.error('❌ DATABASE_URL is not defined in .env file!');
+  } else {
+    logger.log('✅ Environment variables loaded successfully');
+  }
   const app = await NestFactory.create(AppModule);
 
   //Global config
@@ -31,15 +40,15 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  app.useGlobalFilters(
-    new HttpExceptionFilter(),
-    new PrismaExceptionFilter()
-  );
+  // app.useGlobalFilters(
+  //   new HttpExceptionFilter(),
+  //   new PrismaExceptionFilter()
+  // );
 
-  app.useGlobalInterceptors(
-    new LoggingInterceptor(),
-    new TransformInterceptor()
-  );
+  // app.useGlobalInterceptors(
+  //   new LoggingInterceptor(),
+  //   new TransformInterceptor()
+  // );
 
   // // --- 5. Swagger API Documentation ---
   // if (process.env.NODE_ENV !== 'production') {

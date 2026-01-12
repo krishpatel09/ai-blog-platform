@@ -7,12 +7,13 @@ import jwtConfig from './config/jwt.config';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import databaseConfig from './config/database.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [jwtConfig, refreshJwtConfig],
+      load: [jwtConfig, refreshJwtConfig, databaseConfig],
     }),
     PrismaModule,
     AuthModule,

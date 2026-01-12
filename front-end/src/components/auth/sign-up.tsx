@@ -12,10 +12,11 @@ import { Eye, EyeOff } from 'lucide-react'
 import axiosInstance from '@/services/api/axiosInstance'
 import { API_PATH } from '@/services/api/Apipath'
 import { ClerkSocialLogin } from './clerk-auth'
+import { useAuth } from '@/context/AuthContext'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
-    username: '',
+    name: '',
     email: '',
     password: '',
   })
@@ -24,6 +25,7 @@ export default function SignUp() {
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof SignupInput, string>>>({})
   const router = useRouter()
   const { showSuccess, showError } = useToast()
+  const { login } = useAuth()
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -45,7 +47,7 @@ export default function SignUp() {
 
     try {
       const response = await axiosInstance.post(API_PATH.AUTH.SIGNUP, {
-        username: formData.username,
+        name: formData.name,
         email: formData.email,
         password: formData.password
       });
@@ -54,6 +56,11 @@ export default function SignUp() {
       if (response.status === 201 || response.data.success) {
         showSuccess(response.data.message || 'Account created! Redirecting...');
         router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        const userData = {
+          ...response.data.user,
+          accessToken: response.data.accessToken
+        };
+        login(userData, false)
       } else {
         showError(response.data.message || 'Failed to create account');
       }
@@ -86,26 +93,26 @@ export default function SignUp() {
       <form className="space-y-6" onSubmit={handleSignUp}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Username
+            <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Name
             </label>
             <Input
-              id="username"
-              name="username"
+              id="name"
+              name="name"
               type="text"
-              autoComplete="username"
+              autoComplete="name"
               required
-              value={formData.username}
+              value={formData.name}
               onChange={(e) => {
-                setFormData({ ...formData, username: e.target.value })
-                if (fieldErrors.username) setFieldErrors({ ...fieldErrors, username: undefined })
+                setFormData({ ...formData, name: e.target.value })
+                if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: undefined })
               }}
-              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.username ? 'border-red-500 focus:ring-red-500' : ''
+              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.name ? 'border-red-500 focus:ring-red-500' : ''
                 }`}
-              placeholder="Enter your username"
+              placeholder="Enter your Name"
             />
-            {fieldErrors.username && (
-              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.username}</p>
+            {fieldErrors.name && (
+              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.name}</p>
             )}
           </div>
 

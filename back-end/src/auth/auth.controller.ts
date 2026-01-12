@@ -24,12 +24,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 export class AuthController {
   constructor(private authService: AuthService) { }
 
-  private setRefreshTokenCookie(res: Response, refreshToken: string) {
+  private setRefreshTokenCookie(res: Response, refreshToken: string, maxAge: number) {
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge,
     });
   }
 
@@ -51,24 +51,22 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { refreshToken, accessToken, user } = await this.authService.signin(
-      dto,
-      ip,
-      userAgent,
-    );
-    this.setRefreshTokenCookie(res, refreshToken);
+    const result = await this.authService.signin(dto, ip, userAgent);
+    const { accessToken, refreshToken, expiresInMs, user } = result.data;
+    this.setRefreshTokenCookie(res, refreshToken, expiresInMs);
     return { accessToken, user };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
-    @Req() req: Request,
+    @Req() req: any,
     @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = (req.cookies?.refreshToken as string) || '';
+    const userId = req.user?.id;
     const result = await this.authService.logout(refreshToken, ip, userAgent);
     res.clearCookie('refreshToken');
     return result;
@@ -82,9 +80,8 @@ export class AuthController {
     @Headers('user-agent') userAgent: string,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const { refreshToken, accessToken, user } =
-      await this.authService.refreshToken(dto, ip, userAgent);
-    this.setRefreshTokenCookie(res, refreshToken);
+    const result = await this.authService.refreshToken(dto, ip, userAgent);
+    const { refreshToken, accessToken, user } = result.data;
     return { accessToken, user };
   }
 

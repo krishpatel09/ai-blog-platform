@@ -25,10 +25,18 @@ export class TokenService {
   }
 
   //refresh token
-  async generateRefreshToken(userId: string): Promise<string> {
+  async generateRefreshToken(userId: string, rememberMe: boolean = false): Promise<{ token: string; expiresInMs: number }> {
+    await this.prisma.refreshToken.deleteMany({
+      where: { userId: userId },
+    });
+
     const token = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
+
+    const expiryDays = rememberMe ? 7 : 1;
+    expiresAt.setDate(expiresAt.getDate() + expiryDays);
+
+    const expiresInMs = expiryDays * 24 * 60 * 60 * 1000;
 
     await this.prisma.refreshToken.create({
       data: {
@@ -39,7 +47,7 @@ export class TokenService {
       },
     });
 
-    return token;
+    return { token, expiresInMs };
   }
 
   // Validate refresh token

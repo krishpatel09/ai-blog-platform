@@ -3,10 +3,10 @@ import { z } from "zod"
 
 //signup schema
 export const signupSchema = z.object({
-  username: z
+  name: z
     .string()
-    .min(1, "Username is required")
-    .min(3, "Username must be at least 3 characters"),
+    .min(1, "Name is required")
+    .min(3, "Name must be at least 3 characters"),
   email: z
     .string()
     .min(1, "Email is required")

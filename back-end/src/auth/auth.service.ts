@@ -39,9 +39,7 @@ export class AuthService {
     //hash password
     const usernameGenerate = await slugifyEmail(email);
     const hashedPassword = await bcrypt.hash(password, 10);
-    const { token, expiresAt } =
-      this.tokenService.generateEmailVerificationToken();
-
+    const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
     try {
       const result = await this.prisma.$transaction(async (tx) => {
         const user = await tx.user.create({
@@ -63,46 +61,52 @@ export class AuthService {
             security: true,
           },
         });
-
-        //send verification email
-        await this.emailService.sendVerificationEmail(
-          user.email,
-          user.name,
-          token,
-        );
-        console.log('Verification email sent');
-
-        // Log signup
-        await this.auditService.log({
-          userId: user.id,
-          action: 'SIGNUP',
-          ipAddress,
-          userAgent,
-          success: true,
-        });
-
-        console.log('Signup successful');
-        return {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            emailVerified: user.security?.emailVerified || false,
+        console.log('User created');
+        await tx.auditLog.create({
+          data: {
+            userId: user.id,
+            action: 'SIGNUP',
+            ipAddress,
+            userAgent,
+            success: true,
           },
-          message: 'Registration successful. Please verify your email.',
-        };
-      })
+        });
+        console.log('Audit log created');
+        return user;
+      }, {
+        timeout: 15000,
+      });
+      console.log('User created after transaction');
+      //send verification email
+      this.emailService.sendVerificationEmail(
+        result.email,
+        result.name,
+        token,
+      ).catch(err => console.error('Email sending failed:', err));
+      console.log('Verification email sent');
+
+      console.log('Signup successful');
+      return {
+        success: true,
+        message: 'Registration successful. Please verify your email.',
+        data: {
+          user: {
+            id: result.id,
+            username: result.username,
+            email: result.email,
+            emailVerified: result.security?.emailVerified || false,
+          },
+        },
+      };
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      console.error(error);
+      console.error('Signup error:', error);
+      if (error instanceof BadRequestException) throw error;
       throw new InternalServerErrorException('Internal server error');
     }
   }
 
   async signin(signinDto: SigninDto, ipAddress?: string, userAgent?: string) {
-    const { email, password } = signinDto;
+    const { email, password, rememberMe = false } = signinDto;
 
     console.log('signinDto', signinDto);
     try {
@@ -111,12 +115,12 @@ export class AuthService {
         include: { security: true },
       });
 
-      if (!user || !user.security) {
+      if (!user || !user.security || !(await bcrypt.compare(password, user.security.password))) {
         throw new UnauthorizedException('Invalid email or password');
       }
 
-      if (!(await bcrypt.compare(password, user.security.password))) {
-        throw new UnauthorizedException('Invalid email or password');
+      if (!user.security.emailVerified) {
+        throw new UnauthorizedException('Email not verified');
       }
 
       // Generate tokens
@@ -126,8 +130,9 @@ export class AuthService {
         email: user.email,
       });
 
-      const refreshToken = await this.tokenService.generateRefreshToken(
+      const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
         user.id,
+        rememberMe,
       );
 
       // Log successful login
@@ -139,38 +144,41 @@ export class AuthService {
         success: true,
       });
       return {
-        accessToken,
-        refreshToken,
-        user: {
-          id: user.id,
-          username: user.username,
-          email: user.email,
-          emailVerified: user.security.emailVerified,
-        },
+        success: true,
+        message: 'Login successful',
+        data: {
+          accessToken,
+          refreshToken,
+          expiresInMs,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            emailVerified: user.security.emailVerified,
+          },
+        }
       };
     } catch (error) {
-      console.error(error);
-      throw new InternalServerErrorException('Internal server error');
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error('Login Error:', error);
+      throw new InternalServerErrorException('Internal server error')
     }
   }
 
   async logout(
-    accessToken?: string,
-    refreshToken?: string,
+    userId: string,
+    refreshToken: string,
     ipAddress?: string,
     userAgent?: string,
   ): Promise<{ message: string }> {
-    // Only validate and revoke if refresh token exists and is not empty
-    if (!refreshToken || refreshToken.trim() === '') {
-      return { message: 'Logged out successfully' };
-    }
     try {
-      const refreshTokenRecord = await this.tokenService.validateRefreshToken(refreshToken);
 
       await this.tokenService.deleteRefreshToken(refreshToken);
 
       await this.auditService.log({
-        userId: refreshTokenRecord.userId,
+        userId,
         action: 'LOGOUT',
         ipAddress,
         userAgent,
@@ -218,8 +226,9 @@ export class AuthService {
           }
         });
 
-        const newRefreshToken = await this.tokenService.generateRefreshToken(
+        const { token: newRefreshToken } = await this.tokenService.generateRefreshToken(
           oldRefreshToken.user.id,
+          false,
         );
 
         const accessToken = this.tokenService.generateAccessToken({
@@ -236,14 +245,18 @@ export class AuthService {
           success: true,
         });
         return {
-          accessToken,
-          refreshToken: newRefreshToken,
-          user: {
-            id: oldRefreshToken.user.id,
-            username: oldRefreshToken.user.username,
-            email: oldRefreshToken.user.email,
-            emailVerified: oldRefreshToken.user.security?.emailVerified || false,
-          },
+          message: 'Token refreshed successfully',
+          success: true,
+          data: {
+            accessToken,
+            refreshToken: newRefreshToken,
+            user: {
+              id: oldRefreshToken.user.id,
+              username: oldRefreshToken.user.username,
+              email: oldRefreshToken.user.email,
+              emailVerified: oldRefreshToken.user.security?.emailVerified || false,
+            },
+          }
         };
       })
     } catch (error) {
@@ -284,8 +297,9 @@ export class AuthService {
       email: userSecurity.user.email,
     });
 
-    const refreshToken = await this.tokenService.generateRefreshToken(
+    const { token: refreshToken } = await this.tokenService.generateRefreshToken(
       userSecurity.user.id,
+      false,
     );
 
     await this.auditService.log({
@@ -297,9 +311,18 @@ export class AuthService {
     });
 
     return {
+      success: true,
       message: 'Email verified successfully',
-      accessToken,
-      refreshToken,
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: userSecurity.user.id,
+          username: userSecurity.user.username,
+          email: userSecurity.user.email,
+          emailVerified: userSecurity.emailVerified,
+        }
+      }
     };
   }
 
@@ -324,29 +347,34 @@ export class AuthService {
 
     // Generate new token
     const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
+    try {
 
-    await this.prisma.userSecurity.update({
-      where: { userId: user.id },
-      data: {
-        emailVerificationToken: token,
-        emailVerificationExpires: expiresAt,
-      },
-    });
+      await this.prisma.userSecurity.update({
+        where: { userId: user.id },
+        data: {
+          emailVerificationToken: token,
+          emailVerificationExpires: expiresAt,
+        },
+      });
 
-    await this.emailService.sendVerificationEmail(
-      user.email,
-      user.name,
-      token,
-    );
+      await this.emailService.sendVerificationEmail(
+        user.email,
+        user.name,
+        token,
+      ).catch(err => console.error('Resend Email Error:', err));
 
-    await this.auditService.log({
-      userId: user.id,
-      action: 'RESEND_VERIFICATION',
-      ipAddress,
-      userAgent,
-      success: true,
-    });
+      await this.auditService.log({
+        userId: user.id,
+        action: 'RESEND_VERIFICATION',
+        ipAddress,
+        userAgent,
+        success: true,
+      });
 
-    return { message: 'Verification email sent successfully' };
+      return { message: 'Verification email sent successfully' };
+    } catch (error) {
+      console.error('Resend Verification Failed:', error);
+      throw new InternalServerErrorException('Could not resend verification email');
+    }
   }
 }
