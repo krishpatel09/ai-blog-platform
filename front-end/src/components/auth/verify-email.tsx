@@ -58,14 +58,11 @@ function VerifyEmailContent() {
                 setStatus('success')
                 showSuccess(message || "Email verified successfully!")
 
-                // REFACTOR: Proper data flow for authentication after email verification
-                // 1. Wait 2 seconds for user to see success message
-                // 2. Call login() which stores user + token in localStorage AND updates AuthContext state
-                // 3. Redirect to dashboard AFTER login completes
-                // This ensures middleware can detect authentication before redirect happens
                 setTimeout(() => {
                     login(data.user, data.accessToken)
-                    router.push('/dashboard')
+                    setTimeout(() => {
+                        router.replace('/dashboard')
+                    }, 100)
                 }, 2000)
             }
         } catch (error: any) {

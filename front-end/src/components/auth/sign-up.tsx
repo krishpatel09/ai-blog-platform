@@ -57,7 +57,7 @@ export default function SignUp() {
       }
     } catch (error: any) {
       console.error(error)
-      const errorMessage = error.data?.message || error.message
+      const errorMessage = error.response?.data?.message || error.message
       showError(errorMessage)
     } finally {
       setLoading(false)

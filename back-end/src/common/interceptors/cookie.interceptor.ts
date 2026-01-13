@@ -8,15 +8,23 @@ export class CookieInterceptor implements NestInterceptor {
 
         return next.handle().pipe(
             map((data) => {
+                const cookieOptions: any = {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                    path: '/',
+                };
                 if (data?.data?.refreshToken) {
-                    res.cookie('refreshToken', data.data.refreshToken, {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'lax',
-                        maxAge: data.data.expiresInMs,
-                    });
+                    if (data.data.expiresInMs) {
+                        cookieOptions.maxAge = data.data.expiresInMs;
+                    }
+                    res.cookie('refreshToken', data.data.refreshToken, cookieOptions);
                     delete data.data.refreshToken;
                     delete data.data.expiresInMs;
+                }
+                if (data?.action === 'LOGOUT') {
+                    res.clearCookie('refreshToken');
+                    delete data.action;
                 }
                 return data;
             }),

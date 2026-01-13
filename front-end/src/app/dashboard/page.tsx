@@ -1,38 +1,38 @@
 
 'use client';
 import { useState } from 'react';
-import { useClerk } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import axiosInstance from '@/services/api/axiosInstance';
 import { API_PATH } from '@/services/api/Apipath';
-import TokenService from '@/services/api/Tokenservice';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 export default function Dashboard() {
-    const { signOut } = useClerk();
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const { showSuccess, showError } = useToast();
+    const { user, logout } = useAuth();
 
     const handleLogout = async () => {
         setLoading(true);
         try {
+            // Call backend logout API to invalidate refresh token
             await axiosInstance.post(API_PATH.AUTH.LOGOUT);
             showSuccess('Logged out successfully');
+
+            // Clear local state (localStorage + AuthContext)
+            logout();
+
+            // Redirect to sign-in page
+            router.replace('/sign-in');
         } catch (error: any) {
-            console.error("Backend logout failed:", error);
+            console.error("Logout error:", error);
+            // Even if backend fails, clear local state
+            logout();
+            showError('Logged out (with errors)');
+            router.replace('/sign-in');
         } finally {
-            TokenService.removeUser();
-            try {
-                await signOut();
-                router.push('/sign-in');
-            } catch (clerkError) {
-                console.error("Clerk signOut failed:", clerkError);
-                router.push('/sign-in');
-            } finally {
-                window.location.href = '/sign-in';
-                setLoading(false);
-            }
+            setLoading(false);
         }
     }
 
@@ -48,7 +48,12 @@ export default function Dashboard() {
                     {loading ? 'Logging out...' : 'Logout'}
                 </button>
             </div>
-            <div>Welcome to your dashboard!</div>
+            <div>
+                <p>Welcome to your dashboard, {user?.username || user?.email}!</p>
+                {user?.emailVerified && (
+                    <p className="text-green-600 mt-2">✓ Email verified</p>
+                )}
+            </div>
         </div>
     )
 }

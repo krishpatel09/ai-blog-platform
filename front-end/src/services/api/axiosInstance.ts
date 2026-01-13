@@ -10,6 +10,7 @@ const URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const axiosInstance = axios.create({
     baseURL: URL,
+    withCredentials: true,
     headers: {
         "Content-Type": "application/json",
         Accept: "application/json",

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-    const token = request.cookies.get('accessToken')?.value;
+    const token = request.cookies.get('refreshToken')?.value;
     const { pathname } = request.nextUrl;
 
     const protectedPaths = ['/dashboard', '/profile', '/settings'];
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
         loginUrl.searchParams.set('from', pathname);
 
         const response = NextResponse.redirect(loginUrl);
-        response.cookies.delete('accessToken');
+        response.cookies.delete('refreshToken');
         return response;
     }
 

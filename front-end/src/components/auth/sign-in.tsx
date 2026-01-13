@@ -59,8 +59,10 @@ export default function SignIn() {
       if (success) {
         login(data.user, data.accessToken)
         showSuccess(message)
-        console.log("Sign-in response", response.data);
-        router.replace('/dashboard')
+
+        setTimeout(() => {
+          router.replace('/dashboard')
+        }, 200);
       } else {
         showError(message)
       }

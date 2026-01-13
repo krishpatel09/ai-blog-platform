@@ -164,10 +164,12 @@ export class AuthService {
     refreshToken: string,
     ipAddress?: string,
     userAgent?: string,
-  ): Promise<{ message: string }> {
+  ): Promise<{ success: boolean; message: string; action: 'LOGOUT' }> {
     try {
 
-      await this.tokenService.deleteRefreshToken(refreshToken);
+      if (refreshToken) {
+        await this.tokenService.deleteRefreshToken(refreshToken);
+      }
 
       await this.auditService.log({
         userId,
@@ -177,14 +179,16 @@ export class AuthService {
         success: true,
       });
     } catch (error) {
-      console.warn(
-        'Logout cleanup warning:',
-        error instanceof Error ? error.message : 'Invalid token provided',
-      );
+      console.error('Logout Error:', error);
+      throw new InternalServerErrorException('Internal server error')
     } finally {
       this.tokenService.cleanupExpiredTokens().catch(console.error);
     }
-    return { message: 'Logged out successfully' };
+    return {
+      success: true,
+      message: 'Logged out successfully',
+      action: 'LOGOUT',
+    };
   }
 
   async refreshToken(
@@ -208,48 +212,35 @@ export class AuthService {
         throw new UnauthorizedException('Refresh token has been revoked');
       }
 
-      return await this.prisma.$transaction(async (tx) => {
-        await tx.refreshToken.update({
-          where: {
-            id: oldRefreshToken.id
+      // Only generate NEW accessToken
+      // Keep the SAME refreshToken (no rotation needed)
+      const accessToken = this.tokenService.generateAccessToken({
+        userId: oldRefreshToken.user.id,
+        username: oldRefreshToken.user.username,
+        email: oldRefreshToken.user.email,
+      });
+
+      await this.auditService.log({
+        userId: oldRefreshToken.user.id,
+        action: 'TOKEN_REFRESH',
+        ipAddress,
+        userAgent,
+        success: true,
+      });
+
+      return {
+        message: 'Token refreshed successfully',
+        success: true,
+        data: {
+          accessToken,
+          user: {
+            id: oldRefreshToken.user.id,
+            username: oldRefreshToken.user.username,
+            email: oldRefreshToken.user.email,
+            emailVerified: oldRefreshToken.user.security?.emailVerified || false,
           },
-          data: {
-            isRevoked: true
-          }
-        });
-
-        const { token: newRefreshToken } = await this.tokenService.generateRefreshToken(
-          oldRefreshToken.user.id,
-          false,
-        );
-
-        const accessToken = this.tokenService.generateAccessToken({
-          userId: oldRefreshToken.user.id,
-          username: oldRefreshToken.user.username,
-          email: oldRefreshToken.user.email,
-        });
-
-        await this.auditService.log({
-          userId: oldRefreshToken.user.id,
-          action: 'TOKEN_REFRESH',
-          ipAddress,
-          userAgent,
-          success: true,
-        });
-        return {
-          message: 'Token refreshed successfully',
-          success: true,
-          data: {
-            accessToken,
-            user: {
-              id: oldRefreshToken.user.id,
-              username: oldRefreshToken.user.username,
-              email: oldRefreshToken.user.email,
-              emailVerified: oldRefreshToken.user.security?.emailVerified || false,
-            },
-          }
-        };
-      })
+        }
+      };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
@@ -312,7 +303,7 @@ export class AuthService {
           id: userSecurity.user.id,
           username: userSecurity.user.username,
           email: userSecurity.user.email,
-          emailVerified: userSecurity.emailVerified,
+          emailVerified: true,
         }
       }
     };
