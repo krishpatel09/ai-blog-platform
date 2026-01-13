@@ -10,13 +10,12 @@ export function ClerkSocialLogin() {
     if (!isLoaded) return null;
 
     const signInWith = (strategy: OAuthStrategy) => {
-        return signIn.authenticateWithRedirect({
+        signIn.authenticateWithRedirect({
             strategy,
-            redirectUrl: '/dashboard',
+            redirectUrl: '/auth/callback',
             redirectUrlComplete: '/dashboard',
         });
     };
-
     return (
         <div className="grid grid-cols-2 gap-4">
             <button

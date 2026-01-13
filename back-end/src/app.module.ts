@@ -8,6 +8,7 @@ import refreshJwtConfig from './config/refresh-jwt.config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import databaseConfig from './config/database.config';
+import { ClerkWebhookModule } from './webhooks/clerk/clerk.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import databaseConfig from './config/database.config';
     }),
     PrismaModule,
     AuthModule,
+    ClerkWebhookModule,
   ],
   controllers: [AppController],
   providers: [

@@ -3,6 +3,7 @@ import {
   BadRequestException,
   InternalServerErrorException,
   UnauthorizedException,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { TokenService } from './services/token.service';
@@ -13,9 +14,12 @@ import { SigninDto } from './dto/signin.dto';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { slugifyEmail } from '../utils/username.util';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private prisma: PrismaService,
     private tokenService: TokenService,
@@ -360,4 +364,182 @@ export class AuthService {
       throw new InternalServerErrorException('Could not resend verification email');
     }
   }
+
+  async verifyClerkSession(sessionId: string, ipAddress?: string, userAgent?: string) {
+    try {
+      // Step 1: Verify Clerk session is valid and active
+      const session = await clerkClient.sessions.getSession(sessionId);
+      this.logger.log(`[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`);
+
+      if (!session || session.status !== 'active') {
+        this.logger.error(`[Clerk Verify] Invalid or expired session: ${sessionId}`);
+        throw new UnauthorizedException('Invalid or expired Clerk session');
+      }
+
+      // Step 2: Get Clerk user data
+      const clerkUser = await clerkClient.users.getUser(session.userId);
+      this.logger.log(`[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`);
+
+      if (!clerkUser) {
+        this.logger.error(`[Clerk Verify] Clerk user not found for session: ${sessionId}`);
+        throw new UnauthorizedException('Clerk user not found');
+      }
+
+      // Step 3: Poll database for user (handles race condition with webhook)
+      const maxRetries = 20; // 20 retries * 500ms = 10 seconds max wait
+      const retryDelay = 500; // 500ms between retries
+      type UserWithSecurity = Awaited<ReturnType<typeof this.prisma.user.findUnique>>;
+      let user: UserWithSecurity = null;
+      let retryCount = 0;
+
+      this.logger.log(`[Clerk Verify] Starting database polling for clerkId: ${clerkUser.id}`);
+
+      while (retryCount < maxRetries && !user) {
+        user = await this.prisma.user.findUnique({
+          where: { clerkId: clerkUser.id },
+          include: { security: true },
+        });
+
+        if (user) {
+          this.logger.log(`[Clerk Verify] User found in database after ${retryCount} retries (${retryCount * retryDelay}ms)`);
+          break;
+        }
+
+        retryCount++;
+        this.logger.log(`[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`);
+
+        // Wait before next retry
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+      }
+
+      // Step 4: Fallback - Create user directly if webhook failed
+      if (!user) {
+        this.logger.warn(`[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`);
+
+        const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+        if (!primaryEmail) {
+          this.logger.error(`[Clerk Verify] No email address found for Clerk user: ${clerkUser.id}`);
+          throw new BadRequestException('No email address associated with Clerk account');
+        }
+
+        const fullName =
+          clerkUser.firstName && clerkUser.lastName
+            ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+            : clerkUser.username || primaryEmail.split('@')[0];
+
+        const username =
+          clerkUser.username || primaryEmail.split('@')[0] + '_clerk';
+
+        // Create user with transaction to ensure atomicity
+        user = await this.prisma.$transaction(async (tx) => {
+          const newUser = await tx.user.upsert({
+            where: { email: primaryEmail },
+            update: {
+              clerkId: clerkUser.id,
+              name: fullName,
+              avatar: clerkUser.imageUrl,
+            },
+            create: {
+              clerkId: clerkUser.id,
+              email: primaryEmail,
+              name: fullName,
+              username: username,
+              avatar: clerkUser.imageUrl,
+              isActive: true,
+            },
+          });
+
+          // Create or update security record
+          const existingSecurity = await tx.userSecurity.findUnique({
+            where: { userId: newUser.id },
+          });
+
+          if (!existingSecurity) {
+            await tx.userSecurity.create({
+              data: {
+                userId: newUser.id,
+                password: '',
+                emailVerified: true,
+                emailVerificationToken: null,
+                emailVerificationExpires: null,
+              },
+            });
+          } else {
+            await tx.userSecurity.update({
+              where: { userId: newUser.id },
+              data: {
+                emailVerified: true,
+              },
+            });
+          }
+
+          // Return user with security relation
+          return tx.user.findUnique({
+            where: { id: newUser.id },
+            include: { security: true },
+          });
+        });
+
+        this.logger.log(`[Clerk Verify] Fallback user creation successful: ${user?.id}`);
+      }
+
+      // Type assertion: user must exist at this point (either from polling or fallback)
+      if (!user) {
+        throw new InternalServerErrorException('Failed to create or retrieve user');
+      }
+
+      // Step 5: Validate user is active
+      if (!user.isActive) {
+        this.logger.error(`[Clerk Verify] User account is inactive: ${user.id}`);
+        throw new UnauthorizedException('Account is inactive');
+      }
+
+      // Step 6: Generate tokens
+      const accessToken = this.tokenService.generateAccessToken({
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+      });
+
+      const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
+        user.id,
+        false,
+      );
+
+      // Step 7: Log successful authentication
+      await this.auditService.log({
+        userId: user.id,
+        action: 'CLERK_LOGIN',
+        ipAddress,
+        userAgent,
+        success: true,
+      });
+
+      this.logger.log(`[Clerk Verify] Authentication successful for user: ${user.id}`);
+
+      return {
+        success: true,
+        message: 'Clerk authentication successful',
+        data: {
+          accessToken,
+          refreshToken,
+          expiresInMs,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            emailVerified: (user as any).security?.emailVerified || true,
+          },
+        },
+      };
+    } catch (error) {
+      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+        throw error;
+      }
+      this.logger.error('[Clerk Verify] Unexpected error:', error);
+      throw new InternalServerErrorException('Failed to verify Clerk session');
+    }
+  }
+
 }

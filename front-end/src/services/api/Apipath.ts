@@ -7,6 +7,11 @@ export const API_PATH = {
         LOGIN: "/api/auth/signin",
         LOGOUT: "/api/auth/logout",
         REFRESH_TOKEN: "/api/auth/refresh-token",
+        CLERK_VERIFY: "/api/auth/clerk-verify",
+    },
+    USERS: {
+        FORGOT_PASSWORD: "/api/users/forgot-password",
+        RESET_PASSWORD: "/api/users/reset-password",
     }
 }
 

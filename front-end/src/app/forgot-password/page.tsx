@@ -1,4 +1,4 @@
-import ForgotPassword from '@/components/auth/ForgotPassword'
+import ForgotPassword from '@/components/auth/Forgot-Password'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {

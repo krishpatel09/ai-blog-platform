@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { render } from '@react-email/render';
 import * as nodemailer from 'nodemailer';
 import VerificationEmail from '../../common/mail/verification-email';
+import ResetPasswordEmail from '../../common/mail/reset-password-email';
 
 @Injectable()
 export class EmailService {
@@ -67,6 +68,20 @@ export class EmailService {
       html: emailHtml,
     };
     return this.sendMail(mailOptions, token, 'verification');
+  }
+
+  async sendPasswordResetEmail(email: string, name: string, token: string) {
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    const emailHtml = await render(ResetPasswordEmail({ resetLink: resetUrl }));
+
+    const mailOptions = {
+      from: process.env.SMTP_FROM || 'noreply@genwrite.com',
+      to: email,
+      subject: 'Reset your password - Genwrite',
+      html: emailHtml,
+    };
+    return this.sendMail(mailOptions, token, 'password reset');
   }
 
 }

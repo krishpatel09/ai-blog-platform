@@ -17,7 +17,9 @@ async function bootstrap() {
   } else {
     logger.log('✅ Environment variables loaded successfully');
   }
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    rawBody: true,
+  });
 
   //Global config
   app.setGlobalPrefix('api');

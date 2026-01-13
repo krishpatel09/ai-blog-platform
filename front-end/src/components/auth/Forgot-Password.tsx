@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/hooks/use-toast'
+import axios from 'axios'
+import { API_PATH } from '@/services/api/Apipath'
 
 export default function ForgotPassword() {
     const [email, setEmail] = useState('')
@@ -18,12 +20,35 @@ export default function ForgotPassword() {
         e.preventDefault()
         setLoading(true)
 
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500))
+        try {
+            const response = await axios.post(API_PATH.USERS.FORGOT_PASSWORD, { email })
 
-        setLoading(false)
-        setSubmitted(true)
-        showSuccess('Reset email sent successfully')
+            if (response.data.success) {
+                setSubmitted(true)
+                showSuccess(response.data.message || 'Reset email sent successfully')
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || 'Failed to send reset email. Please try again.'
+            showError(errorMessage)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const handleResend = async () => {
+        setLoading(true)
+        try {
+            const response = await axios.post(API_PATH.USERS.FORGOT_PASSWORD, { email })
+
+            if (response.data.success) {
+                showSuccess('Reset email sent again')
+            }
+        } catch (error: any) {
+            const errorMessage = error.response?.data?.message || 'Failed to resend email. Please try again.'
+            showError(errorMessage)
+        } finally {
+            setLoading(false)
+        }
     }
 
     return (
@@ -98,11 +123,12 @@ export default function ForgotPassword() {
                     </div>
 
                     <button
-                        onClick={() => setSubmitted(false)}
+                        onClick={handleResend}
+                        disabled={loading}
                         type="button"
-                        className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black transition-colors"
+                        className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                        Resend email
+                        {loading ? 'Sending...' : 'Resend email'}
                     </button>
 
                     <div className="flex justify-center">

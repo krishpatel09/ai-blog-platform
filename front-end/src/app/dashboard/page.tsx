@@ -6,28 +6,27 @@ import axiosInstance from '@/services/api/axiosInstance';
 import { API_PATH } from '@/services/api/Apipath';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
+import { useClerk } from '@clerk/nextjs';
 
 export default function Dashboard() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
     const { showSuccess, showError } = useToast();
     const { user, logout } = useAuth();
+    const { signOut } = useClerk();
 
     const handleLogout = async () => {
         setLoading(true);
         try {
-            // Call backend logout API to invalidate refresh token
+            await signOut();
             await axiosInstance.post(API_PATH.AUTH.LOGOUT);
             showSuccess('Logged out successfully');
 
-            // Clear local state (localStorage + AuthContext)
             logout();
 
-            // Redirect to sign-in page
             router.replace('/sign-in');
         } catch (error: any) {
             console.error("Logout error:", error);
-            // Even if backend fails, clear local state
             logout();
             showError('Logged out (with errors)');
             router.replace('/sign-in');

@@ -80,4 +80,14 @@ export class AuthController {
   ) {
     return this.authService.resendVerificationEmail(dto.email, ipAddress, userAgent);
   }
+
+  @Public()
+  @Post('clerk-verify')
+  async clerkVerify(
+    @Body() body: { sessionId: string },
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.authService.verifyClerkSession(body.sessionId, ip, userAgent);
+  }
 }

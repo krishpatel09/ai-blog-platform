@@ -1,4 +1,4 @@
-import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Patch, Body, UseGuards, Post, Headers } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
@@ -8,6 +8,10 @@ import {
 } from '../common/decorators/current-user.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { Public } from '../common/decorators/public.decorator';
+import { ClientIp } from '../common/decorators/ip.decorator';
 
 
 @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
@@ -41,6 +45,28 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getMyActivity(@CurrentUser() user: CurrentUserType) {
     return this.usersService.getUserActivity(user.userId);
+  }
+
+  // Forgot password endpoint - public
+  @Public()
+  @Post('forgot-password')
+  async forgotPassword(
+    @Body() dto: ForgotPasswordDto,
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.usersService.forgotPassword(dto, ip, userAgent);
+  }
+
+  // Reset password endpoint - public
+  @Public()
+  @Post('reset-password')
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.usersService.resetPassword(dto, ip, userAgent);
   }
 
   // @Get('activity')
