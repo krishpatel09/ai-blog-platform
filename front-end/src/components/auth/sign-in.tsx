@@ -61,7 +61,7 @@ export default function SignIn() {
         showSuccess(message)
 
         setTimeout(() => {
-          router.replace('/dashboard')
+          router.replace('/')
         }, 200);
       } else {
         showError(message)

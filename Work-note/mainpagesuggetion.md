@@ -53,3 +53,5 @@ Here is a detailed breakdown of the proposed structure and features:
     *   Desktop: 3 columns.
     *   Tablet: 2 columns (Left Sidebar + Center).
     *   Mobile: 1 column (Center only, with Hamburger menu for Sidebar).
+
+તમે કહ્યું કે એક જ રોલ છે, તો યુઝરના હોમ પેજ પર સૌથી ઉપર એક "What's on your mind?" (Facebook જેવું) નાનું ટેક્સ્ટ બોક્સ મૂકી શકાય. જેના પર ક્લિક કરતા જ તે સીધો રાઈટિંગ પેજ પર પહોંચી જાય. આનાથી
