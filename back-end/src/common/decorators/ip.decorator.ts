@@ -7,11 +7,19 @@ export const ClientIp = createParamDecorator(
 
     const xForwardedFor = request.headers['x-forwarded-for'];
 
+    let ip: string;
     if (xForwardedFor) {
       const ips = (xForwardedFor as string).split(',');
-      return ips[0].trim();
+      ip = ips[0].trim();
+    } else {
+      ip = request.ip || request.socket.remoteAddress || '0.0.0.0';
     }
 
-    return request.ip || request.socket.remoteAddress || '0.0.0.0';
+    // Normalize IPv6 localhost
+    if (ip === '::1' || ip === '::ffff:127.0.0.1') {
+      return '127.0.0.1';
+    }
+
+    return ip;
   },
 );

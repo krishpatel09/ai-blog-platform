@@ -367,7 +367,6 @@ export class AuthService {
 
   async verifyClerkSession(sessionId: string, ipAddress?: string, userAgent?: string) {
     try {
-      // Step 1: Verify Clerk session is valid and active
       const session = await clerkClient.sessions.getSession(sessionId);
       this.logger.log(`[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`);
 
@@ -376,7 +375,6 @@ export class AuthService {
         throw new UnauthorizedException('Invalid or expired Clerk session');
       }
 
-      // Step 2: Get Clerk user data
       const clerkUser = await clerkClient.users.getUser(session.userId);
       this.logger.log(`[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`);
 
@@ -385,9 +383,8 @@ export class AuthService {
         throw new UnauthorizedException('Clerk user not found');
       }
 
-      // Step 3: Poll database for user (handles race condition with webhook)
-      const maxRetries = 20; // 20 retries * 500ms = 10 seconds max wait
-      const retryDelay = 500; // 500ms between retries
+      const maxRetries = 20;
+      const retryDelay = 500;
       type UserWithSecurity = Awaited<ReturnType<typeof this.prisma.user.findUnique>>;
       let user: UserWithSecurity = null;
       let retryCount = 0;
@@ -408,11 +405,8 @@ export class AuthService {
         retryCount++;
         this.logger.log(`[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`);
 
-        // Wait before next retry
         await new Promise(resolve => setTimeout(resolve, retryDelay));
       }
-
-      // Step 4: Fallback - Create user directly if webhook failed
       if (!user) {
         this.logger.warn(`[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`);
 
@@ -431,7 +425,6 @@ export class AuthService {
         const username =
           clerkUser.username || primaryEmail.split('@')[0] + '_clerk';
 
-        // Create user with transaction to ensure atomicity
         user = await this.prisma.$transaction(async (tx) => {
           const newUser = await tx.user.upsert({
             where: { email: primaryEmail },
@@ -450,7 +443,6 @@ export class AuthService {
             },
           });
 
-          // Create or update security record
           const existingSecurity = await tx.userSecurity.findUnique({
             where: { userId: newUser.id },
           });
@@ -474,7 +466,6 @@ export class AuthService {
             });
           }
 
-          // Return user with security relation
           return tx.user.findUnique({
             where: { id: newUser.id },
             include: { security: true },
@@ -484,18 +475,15 @@ export class AuthService {
         this.logger.log(`[Clerk Verify] Fallback user creation successful: ${user?.id}`);
       }
 
-      // Type assertion: user must exist at this point (either from polling or fallback)
       if (!user) {
         throw new InternalServerErrorException('Failed to create or retrieve user');
       }
 
-      // Step 5: Validate user is active
       if (!user.isActive) {
         this.logger.error(`[Clerk Verify] User account is inactive: ${user.id}`);
         throw new UnauthorizedException('Account is inactive');
       }
 
-      // Step 6: Generate tokens
       const accessToken = this.tokenService.generateAccessToken({
         userId: user.id,
         username: user.username,
@@ -507,7 +495,6 @@ export class AuthService {
         false,
       );
 
-      // Step 7: Log successful authentication
       await this.auditService.log({
         userId: user.id,
         action: 'CLERK_LOGIN',

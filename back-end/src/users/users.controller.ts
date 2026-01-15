@@ -47,7 +47,6 @@ export class UsersController {
     return this.usersService.getUserActivity(user.userId);
   }
 
-  // Forgot password endpoint - public
   @Public()
   @Post('forgot-password')
   async forgotPassword(
@@ -58,7 +57,6 @@ export class UsersController {
     return this.usersService.forgotPassword(dto, ip, userAgent);
   }
 
-  // Reset password endpoint - public
   @Public()
   @Post('reset-password')
   async resetPassword(

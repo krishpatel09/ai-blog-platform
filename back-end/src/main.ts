@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { CookieInterceptor } from './common/interceptors/cookie.interceptor';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { Logger } from '@nestjs/common';
 
 async function bootstrap() {
@@ -44,9 +45,7 @@ async function bootstrap() {
   //   new PrismaExceptionFilter()
   // );
 
-  app.useGlobalInterceptors(
-    new CookieInterceptor(),
-  );
+  app.useGlobalInterceptors(new CookieInterceptor(), new LoggingInterceptor());
 
   // // --- 5. Swagger API Documentation ---
   // if (process.env.NODE_ENV !== 'production') {
@@ -60,7 +59,6 @@ async function bootstrap() {
   //   SwaggerModule.setup('docs', app, document);
   //   logger.log('🚀 Swagger documentation available at /docs');
   // }
-
 
   await app.listen(process.env.PORT || 3000);
   console.log(

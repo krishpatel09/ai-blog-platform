@@ -129,17 +129,14 @@ export class UsersService {
     });
   }
 
-  // Forgot password - send reset email
   async forgotPassword(dto: ForgotPasswordDto, ipAddress?: string, userAgent?: string) {
     const { email } = dto;
 
-    // Find user by email
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: { security: true },
     });
 
-    // Always return success message for security (don't reveal if email exists)
     if (!user || !user.security) {
       return {
         success: true,
@@ -147,22 +144,19 @@ export class UsersService {
       };
     }
 
-    // Generate reset token
-    // const { token, expiresAt } = this.tokenService.generatePasswordResetToken();
-    //check this token and use the generate toen
-    // Update user security with reset token
+    const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
+
     await this.prisma.userSecurity.update({
       where: { userId: user.id },
       data: {
-        resetToken: token,
-        resetExpires: expiresAt,
+        emailVerificationToken: token,
+        emailVerificationExpires: expiresAt,
       },
     });
 
-    // Send password reset email
     await this.emailService.sendPasswordResetEmail(
       user.email,
-      user.name,
+      user.username,
       token,
     ).catch(err => console.error('Password reset email failed:', err));
 
@@ -181,18 +175,12 @@ export class UsersService {
     };
   }
 
-  // Reset password with token
   async resetPassword(dto: ResetPasswordDto, ipAddress?: string, userAgent?: string) {
     const { token, password, confirmPassword } = dto;
 
-    // Validate passwords match
-    if (password !== confirmPassword) {
-      throw new BadRequestException('Passwords do not match');
-    }
 
-    // Find user by reset token
     const userSecurity = await this.prisma.userSecurity.findFirst({
-      where: { resetToken: token },
+      where: { emailVerificationToken: token },
       include: { user: true },
     });
 
@@ -200,16 +188,13 @@ export class UsersService {
       throw new BadRequestException('Invalid or expired reset token');
     }
 
-    // Check if token is expired
     const now = new Date();
     if (userSecurity.resetExpires && now > userSecurity.resetExpires) {
       throw new BadRequestException('Reset token has expired. Please request a new one.');
     }
 
-    // Hash new password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Update password and clear reset token
     await this.prisma.userSecurity.update({
       where: { id: userSecurity.id },
       data: {
@@ -219,7 +204,6 @@ export class UsersService {
       },
     });
 
-    // Log audit event
     await this.auditService.log({
       userId: userSecurity.user.id,
       action: 'PASSWORD_RESET_COMPLETED',
@@ -230,7 +214,7 @@ export class UsersService {
 
     return {
       success: true,
-      message: 'Password has been reset successfully. You can now log in with your new password.',
+      message: 'Password has been reset successfully.',
     };
   }
 }
