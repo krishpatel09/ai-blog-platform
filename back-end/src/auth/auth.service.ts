@@ -25,8 +25,7 @@ export class AuthService {
     private tokenService: TokenService,
     private emailService: EmailService,
     private auditService: AuditService,
-  ) { }
-
+  ) {}
 
   async signup(signupDto: SignupDto, ipAddress?: string, userAgent?: string) {
     const { name, email, password } = signupDto;
@@ -43,50 +42,52 @@ export class AuthService {
     //hash password
     const usernameGenerate = await slugifyEmail(email);
     const hashedPassword = await bcrypt.hash(password, 10);
-    const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
+    const { token, expiresAt } =
+      this.tokenService.generateEmailVerificationToken();
     try {
-      const result = await this.prisma.$transaction(async (tx) => {
-        const user = await tx.user.create({
-          data: {
-            name,
-            username: usernameGenerate,
-            email,
-            isActive: true,
-            security: {
-              create: {
-                password: hashedPassword,
-                emailVerified: false,
-                emailVerificationToken: token,
-                emailVerificationExpires: expiresAt
+      const result = await this.prisma.$transaction(
+        async (tx) => {
+          const user = await tx.user.create({
+            data: {
+              name,
+              username: usernameGenerate,
+              email,
+              isActive: true,
+              security: {
+                create: {
+                  password: hashedPassword,
+                  emailVerified: false,
+                  emailVerificationToken: token,
+                  emailVerificationExpires: expiresAt,
+                },
               },
             },
-          },
-          include: {
-            security: true,
-          },
-        });
-        console.log('User created');
-        await tx.auditLog.create({
-          data: {
-            userId: user.id,
-            action: 'SIGNUP',
-            ipAddress,
-            userAgent,
-            success: true,
-          },
-        });
-        console.log('Audit log created');
-        return user;
-      }, {
-        timeout: 15000,
-      });
+            include: {
+              security: true,
+            },
+          });
+          console.log('User created');
+          await tx.auditLog.create({
+            data: {
+              userId: user.id,
+              action: 'SIGNUP',
+              ipAddress,
+              userAgent,
+              success: true,
+            },
+          });
+          console.log('Audit log created');
+          return user;
+        },
+        {
+          timeout: 15000,
+        },
+      );
       console.log('User created after transaction');
       //send verification email
-      this.emailService.sendVerificationEmail(
-        result.email,
-        result.name,
-        token,
-      ).catch(err => console.error('Email sending failed:', err));
+      this.emailService
+        .sendVerificationEmail(result.email, result.name, token)
+        .catch((err) => console.error('Email sending failed:', err));
       console.log('Verification email sent');
 
       console.log('Signup successful');
@@ -111,7 +112,11 @@ export class AuthService {
         include: { security: true },
       });
 
-      if (!user || !user.security || !(await bcrypt.compare(password, user.security.password))) {
+      if (
+        !user ||
+        !user.security ||
+        !(await bcrypt.compare(password, user.security.password))
+      ) {
         throw new UnauthorizedException('Invalid email or password');
       }
 
@@ -126,10 +131,8 @@ export class AuthService {
         email: user.email,
       });
 
-      const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
-        user.id,
-        rememberMe,
-      );
+      const { token: refreshToken, expiresInMs } =
+        await this.tokenService.generateRefreshToken(user.id, rememberMe);
 
       // Log successful login
       await this.auditService.log({
@@ -152,14 +155,17 @@ export class AuthService {
             email: user.email,
             emailVerified: user.security.emailVerified,
           },
-        }
+        },
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       console.error('Login Error:', error);
-      throw new InternalServerErrorException('Internal server error')
+      throw new InternalServerErrorException('Internal server error');
     }
   }
 
@@ -170,7 +176,6 @@ export class AuthService {
     userAgent?: string,
   ): Promise<{ success: boolean; message: string; action: 'LOGOUT' }> {
     try {
-
       if (refreshToken) {
         await this.tokenService.deleteRefreshToken(refreshToken);
       }
@@ -184,7 +189,7 @@ export class AuthService {
       });
     } catch (error) {
       console.error('Logout Error:', error);
-      throw new InternalServerErrorException('Internal server error')
+      throw new InternalServerErrorException('Internal server error');
     } finally {
       this.tokenService.cleanupExpiredTokens().catch(console.error);
     }
@@ -231,7 +236,7 @@ export class AuthService {
         userAgent,
         success: true,
       });
-
+      console.log('Token refreshed successfully', accessToken);
       return {
         message: 'Token refreshed successfully',
         success: true,
@@ -241,9 +246,10 @@ export class AuthService {
             id: oldRefreshToken.user.id,
             username: oldRefreshToken.user.username,
             email: oldRefreshToken.user.email,
-            emailVerified: oldRefreshToken.user.security?.emailVerified || false,
+            emailVerified:
+              oldRefreshToken.user.security?.emailVerified || false,
           },
-        }
+        },
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
@@ -264,8 +270,13 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired token');
     }
     const now = new Date();
-    if (userSecurity.emailVerificationExpires && now > userSecurity.emailVerificationExpires) {
-      throw new BadRequestException('Verification link has expired. Please request a new one.');
+    if (
+      userSecurity.emailVerificationExpires &&
+      now > userSecurity.emailVerificationExpires
+    ) {
+      throw new BadRequestException(
+        'Verification link has expired. Please request a new one.',
+      );
     }
 
     await this.prisma.userSecurity.update({
@@ -283,10 +294,8 @@ export class AuthService {
       email: userSecurity.user.email,
     });
 
-    const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
-      userSecurity.user.id,
-      false,
-    );
+    const { token: refreshToken, expiresInMs } =
+      await this.tokenService.generateRefreshToken(userSecurity.user.id, false);
 
     await this.auditService.log({
       userId: userSecurity.user.id,
@@ -295,7 +304,7 @@ export class AuthService {
       userAgent,
       success: true,
     });
-    console.log("Email verified successfully");
+    console.log('Email verified successfully');
     return {
       success: true,
       message: 'Email verified successfully',
@@ -308,18 +317,21 @@ export class AuthService {
           username: userSecurity.user.username,
           email: userSecurity.user.email,
           emailVerified: true,
-        }
-      }
+        },
+      },
     };
   }
 
-  async resendVerificationEmail(email: string, ipAddress?: string, userAgent?: string) {
+  async resendVerificationEmail(
+    email: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const user = await this.prisma.user.findUnique({
       where: { email },
       include: {
-        security: true
-
-      }
+        security: true,
+      },
     });
 
     if (!user || !user.security) {
@@ -333,9 +345,9 @@ export class AuthService {
     }
 
     // Generate new token
-    const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
+    const { token, expiresAt } =
+      this.tokenService.generateEmailVerificationToken();
     try {
-
       await this.prisma.userSecurity.update({
         where: { userId: user.id },
         data: {
@@ -344,11 +356,9 @@ export class AuthService {
         },
       });
 
-      await this.emailService.sendVerificationEmail(
-        user.email,
-        user.name,
-        token,
-      ).catch(err => console.error('Resend Email Error:', err));
+      await this.emailService
+        .sendVerificationEmail(user.email, user.name, token)
+        .catch((err) => console.error('Resend Email Error:', err));
 
       await this.auditService.log({
         userId: user.id,
@@ -361,35 +371,53 @@ export class AuthService {
       return { message: 'Verification email sent successfully' };
     } catch (error) {
       console.error('Resend Verification Failed:', error);
-      throw new InternalServerErrorException('Could not resend verification email');
+      throw new InternalServerErrorException(
+        'Could not resend verification email',
+      );
     }
   }
 
-  async verifyClerkSession(sessionId: string, ipAddress?: string, userAgent?: string) {
+  async verifyClerkSession(
+    sessionId: string,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     try {
       const session = await clerkClient.sessions.getSession(sessionId);
-      this.logger.log(`[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`);
+      this.logger.log(
+        `[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`,
+      );
 
       if (!session || session.status !== 'active') {
-        this.logger.error(`[Clerk Verify] Invalid or expired session: ${sessionId}`);
+        this.logger.error(
+          `[Clerk Verify] Invalid or expired session: ${sessionId}`,
+        );
         throw new UnauthorizedException('Invalid or expired Clerk session');
       }
 
       const clerkUser = await clerkClient.users.getUser(session.userId);
-      this.logger.log(`[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`);
+      this.logger.log(
+        `[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`,
+      );
 
       if (!clerkUser) {
-        this.logger.error(`[Clerk Verify] Clerk user not found for session: ${sessionId}`);
+        this.logger.error(
+          `[Clerk Verify] Clerk user not found for session: ${sessionId}`,
+        );
         throw new UnauthorizedException('Clerk user not found');
       }
 
       const maxRetries = 20;
       const retryDelay = 500;
-      type UserWithSecurity = Awaited<ReturnType<typeof this.prisma.user.findUnique>>;
+      type UserWithSecurity = Awaited<
+        ReturnType<typeof this.prisma.user.findUnique>
+      >;
       let user: UserWithSecurity = null;
       let retryCount = 0;
 
-      this.logger.log(`[Clerk Verify] Starting database polling for clerkId: ${clerkUser.id}`);
+      this.logger.log(
+        `[Clerk Verify] Starting database polling for clerkId: ${clerkUser.id}`,
+      );
 
       while (retryCount < maxRetries && !user) {
         user = await this.prisma.user.findUnique({
@@ -398,23 +426,33 @@ export class AuthService {
         });
 
         if (user) {
-          this.logger.log(`[Clerk Verify] User found in database after ${retryCount} retries (${retryCount * retryDelay}ms)`);
+          this.logger.log(
+            `[Clerk Verify] User found in database after ${retryCount} retries (${retryCount * retryDelay}ms)`,
+          );
           break;
         }
 
         retryCount++;
-        this.logger.log(`[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`);
+        this.logger.log(
+          `[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`,
+        );
 
-        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        await new Promise((resolve) => setTimeout(resolve, retryDelay));
       }
       if (!user) {
-        this.logger.warn(`[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`);
+        this.logger.warn(
+          `[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`,
+        );
 
         const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
         if (!primaryEmail) {
-          this.logger.error(`[Clerk Verify] No email address found for Clerk user: ${clerkUser.id}`);
-          throw new BadRequestException('No email address associated with Clerk account');
+          this.logger.error(
+            `[Clerk Verify] No email address found for Clerk user: ${clerkUser.id}`,
+          );
+          throw new BadRequestException(
+            'No email address associated with Clerk account',
+          );
         }
 
         const fullName =
@@ -472,15 +510,21 @@ export class AuthService {
           });
         });
 
-        this.logger.log(`[Clerk Verify] Fallback user creation successful: ${user?.id}`);
+        this.logger.log(
+          `[Clerk Verify] Fallback user creation successful: ${user?.id}`,
+        );
       }
 
       if (!user) {
-        throw new InternalServerErrorException('Failed to create or retrieve user');
+        throw new InternalServerErrorException(
+          'Failed to create or retrieve user',
+        );
       }
 
       if (!user.isActive) {
-        this.logger.error(`[Clerk Verify] User account is inactive: ${user.id}`);
+        this.logger.error(
+          `[Clerk Verify] User account is inactive: ${user.id}`,
+        );
         throw new UnauthorizedException('Account is inactive');
       }
 
@@ -490,10 +534,8 @@ export class AuthService {
         email: user.email,
       });
 
-      const { token: refreshToken, expiresInMs } = await this.tokenService.generateRefreshToken(
-        user.id,
-        false,
-      );
+      const { token: refreshToken, expiresInMs } =
+        await this.tokenService.generateRefreshToken(user.id, false);
 
       await this.auditService.log({
         userId: user.id,
@@ -503,7 +545,9 @@ export class AuthService {
         success: true,
       });
 
-      this.logger.log(`[Clerk Verify] Authentication successful for user: ${user.id}`);
+      this.logger.log(
+        `[Clerk Verify] Authentication successful for user: ${user.id}`,
+      );
 
       return {
         success: true,
@@ -521,12 +565,14 @@ export class AuthService {
         },
       };
     } catch (error) {
-      if (error instanceof UnauthorizedException || error instanceof BadRequestException) {
+      if (
+        error instanceof UnauthorizedException ||
+        error instanceof BadRequestException
+      ) {
         throw error;
       }
       this.logger.error('[Clerk Verify] Unexpected error:', error);
       throw new InternalServerErrorException('Failed to verify Clerk session');
     }
   }
-
 }
