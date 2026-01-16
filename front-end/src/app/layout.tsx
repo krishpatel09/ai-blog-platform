@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
-import { ClerkProvider } from '@clerk/nextjs'
+import { ClerkProvider } from "@clerk/nextjs";
 import { AuthProvider } from "@/context/AuthContext";
 
 const spaceGrotesk = Space_Grotesk({
@@ -29,16 +29,15 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en" >
+      <html lang="en">
         <body
+          suppressHydrationWarning
           className={`${inter.variable} ${spaceGrotesk.variable} antialiased bg-(--color-ai-bg) text-(--color-ai-text)`}
         >
-          <AuthProvider>
-            {children}
-          </AuthProvider>
+          <AuthProvider>{children}</AuthProvider>
           <Toaster position="top-right" />
         </body>
-      </html >
+      </html>
     </ClerkProvider>
   );
 }
