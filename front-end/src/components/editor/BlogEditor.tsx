@@ -17,7 +17,6 @@ const BlogEditor = () => {
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       const json = editor.getJSON();
-      // Placeholder for future state management or auto-save
       console.log(json);
     },
   });

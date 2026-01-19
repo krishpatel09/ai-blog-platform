@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// middleware.ts
-
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("refreshToken")?.value;
   const { pathname } = request.nextUrl;
 
-  // ફેરફાર: અહીં બધા જ લોગિન પછીના રાઉટ્સ ઉમેરો
   const protectedPaths = [
     "/dashboard",
     "/profile",
@@ -15,6 +12,8 @@ export function middleware(request: NextRequest) {
     "/monitaring",
     "/library",
     "/story",
+    "/create-blog",
+    "/edit-blog",
   ];
 
   const authPaths = ["/sign-in", "/sign-up"];
@@ -32,7 +31,7 @@ export function middleware(request: NextRequest) {
   }
 
   if (isAuthPath && token) {
-    return NextResponse.redirect(new URL("/", request.url)); // 'dashboard' ને બદલે root પર મોકલો કારણ કે આપણે '/' પર ફીડ બતાવીએ છીએ
+    return NextResponse.redirect(new URL("/", request.url));
   }
 
   return NextResponse.next();

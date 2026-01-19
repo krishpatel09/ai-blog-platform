@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@plugin "@tailwindcss/typography";
 
 :root {
   --radius: 0.5rem;
@@ -32,4 +33,58 @@
     color: var(--color-blogane-text-main);
     font-family: var(--font-inter);
   }
+}
+
+
+
+/* Explicit Editor Heading Styles (Fallback/Override) */
+.ProseMirror h1 {
+  font-size: 2.25em;
+  font-weight: 800;
+  margin-top: 1.5em; /* 0.8em is default prose, 0 is reset */
+  margin-bottom: 0.5em;
+  line-height: 1.1;
+  color: inherit;
+}
+
+.ProseMirror h2 {
+  font-size: 1.75em;
+  font-weight: 700;
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  line-height: 1.2;
+  color: inherit;
+}
+
+.ProseMirror h3 {
+  font-size: 1.375em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.4;
+  color: inherit;
+}
+
+.ProseMirror h4 {
+  font-size: 1.125em;
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  line-height: 1.5;
+  color: inherit;
+}
+
+/* Ensure paragraph has breathing room */
+.ProseMirror p {
+  margin-bottom: 1.25em;
+  line-height: 1.75;
+}
+
+/* Force pure black text for editor content as requested */
+.ProseMirror {
+    color: #000000 !important;
+}
+
+.ProseMirror * {
+    color: inherit;
 }
