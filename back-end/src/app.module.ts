@@ -8,17 +8,26 @@ import refreshJwtConfig from './config/refresh-jwt.config';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import databaseConfig from './config/database.config';
+import imagekitConfig from './config/imagekit.config';
 import { ClerkWebhookModule } from './webhooks/clerk/clerk.module';
+import { TagsModule } from './tags/tags.module';
+import { UsersModule } from './users/users.module';
+import { BlogModule } from './blog/blog.module';
+import { ImageKitModule } from './ImageKit/imagekit.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      load: [jwtConfig, refreshJwtConfig, databaseConfig],
+      load: [jwtConfig, refreshJwtConfig, databaseConfig, imagekitConfig],
     }),
     PrismaModule,
     AuthModule,
     ClerkWebhookModule,
+    TagsModule,
+    UsersModule,
+    BlogModule,
+    ImageKitModule,
   ],
   controllers: [AppController],
   providers: [
@@ -26,6 +35,6 @@ import { ClerkWebhookModule } from './webhooks/clerk/clerk.module';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
-  ]
+  ],
 })
-export class AppModule { }
+export class AppModule {}

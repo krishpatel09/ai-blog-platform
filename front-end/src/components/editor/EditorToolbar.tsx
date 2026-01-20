@@ -5,14 +5,15 @@ import {
   List,
   ListOrdered,
   Heading2,
-  Quote,
-  Code,
   SmilePlus,
   FileCode,
-  Zap,
-  Image as ImageIcon,
   Link as LinkIcon,
   MoreHorizontal,
+  Strikethrough,
+  Minus,
+  RotateCcw,
+  RotateCw,
+  RemoveFormatting,
 } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { CodeSandboxModal } from "./CodeSandboxModal";
@@ -29,6 +30,9 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
 
+  const [isMoreOpen, setIsMoreOpen] = useState(false);
+  const moreDropdownRef = useRef<HTMLDivElement>(null);
+
   // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -37,6 +41,12 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
         !emojiPickerRef.current.contains(event.target as Node)
       ) {
         setIsEmojiPickerOpen(false);
+      }
+      if (
+        moreDropdownRef.current &&
+        !moreDropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsMoreOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -82,12 +92,12 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
   const inactiveBtn = "text-gray-600 hover:bg-gray-100 hover:text-black";
 
   return (
-    <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 p-2 sticky top-0 bg-white z-10 transition-all">
+    <div className="flex flex-wrap items-center gap-1 border-b border-gray-200 p-2 sticky top-0 bg-gray-50 z-10 transition-all">
       {/* Bold */}
       <button
         onMouseDown={exec(
           () => editor.chain().focus().toggleBold().run(),
-          "Bold"
+          "Bold",
         )}
         className={`${baseBtn} ${
           editor.isActive("bold") ? activeBtn : inactiveBtn
@@ -101,7 +111,7 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
       <button
         onMouseDown={exec(
           () => editor.chain().focus().toggleItalic().run(),
-          "Italic"
+          "Italic",
         )}
         className={`${baseBtn} ${
           editor.isActive("italic") ? activeBtn : inactiveBtn
@@ -154,10 +164,10 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           editor.isActive("bulletList", { listStyleType: "disc" })
             ? "disc"
             : editor.isActive("bulletList", { listStyleType: "circle" })
-            ? "circle"
-            : editor.isActive("bulletList", { listStyleType: "square" })
-            ? "square"
-            : undefined
+              ? "circle"
+              : editor.isActive("bulletList", { listStyleType: "square" })
+                ? "square"
+                : undefined
         }
         options={[
           {
@@ -201,14 +211,18 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           editor.isActive("orderedList", { listStyleType: "decimal" })
             ? "decimal"
             : editor.isActive("orderedList", { listStyleType: "lower-alpha" })
-            ? "lower-alpha"
-            : editor.isActive("orderedList", { listStyleType: "upper-alpha" })
-            ? "upper-alpha"
-            : editor.isActive("orderedList", { listStyleType: "lower-roman" })
-            ? "lower-roman"
-            : editor.isActive("orderedList", { listStyleType: "upper-roman" })
-            ? "upper-roman"
-            : undefined
+              ? "lower-alpha"
+              : editor.isActive("orderedList", { listStyleType: "upper-alpha" })
+                ? "upper-alpha"
+                : editor.isActive("orderedList", {
+                      listStyleType: "lower-roman",
+                    })
+                  ? "lower-roman"
+                  : editor.isActive("orderedList", {
+                        listStyleType: "upper-roman",
+                      })
+                    ? "upper-roman"
+                    : undefined
         }
         options={[
           {
@@ -258,28 +272,28 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           editor.isActive("heading", { level: 1 })
             ? "Heading 1"
             : editor.isActive("heading", { level: 2 })
-            ? "Heading 2"
-            : editor.isActive("heading", { level: 3 })
-            ? "Heading 3"
-            : editor.isActive("heading", { level: 4 })
-            ? "Heading 4"
-            : editor.isActive("heading", { level: 5 })
-            ? "Heading 5"
-            : "Normal Text"
+              ? "Heading 2"
+              : editor.isActive("heading", { level: 3 })
+                ? "Heading 3"
+                : editor.isActive("heading", { level: 4 })
+                  ? "Heading 4"
+                  : editor.isActive("heading", { level: 5 })
+                    ? "Heading 5"
+                    : "Normal Text"
         }
         isActive={editor.isActive("heading")}
         activeValue={
           editor.isActive("heading", { level: 1 })
             ? "h1"
             : editor.isActive("heading", { level: 2 })
-            ? "h2"
-            : editor.isActive("heading", { level: 3 })
-            ? "h3"
-            : editor.isActive("heading", { level: 4 })
-            ? "h4"
-            : editor.isActive("heading", { level: 5 })
-            ? "h5"
-            : "p"
+              ? "h2"
+              : editor.isActive("heading", { level: 3 })
+                ? "h3"
+                : editor.isActive("heading", { level: 4 })
+                  ? "h4"
+                  : editor.isActive("heading", { level: 5 })
+                    ? "h5"
+                    : "p"
         }
         options={[
           {
@@ -380,30 +394,87 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
         <FileCode className="w-5 h-5" />
       </button>
 
-      {/* Image */}
-      <button
-        onMouseDown={(e) => {
-          e.preventDefault();
-          const url = window.prompt("Image URL");
-          console.log("[Toolbar] Image URL:", url);
-          if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
-          }
-        }}
-        className={`${baseBtn} ${inactiveBtn}`}
-        title="Add Image"
-      >
-        <ImageIcon className="w-5 h-5" />
-      </button>
-
-      {/* More */}
-      <div className="ml-auto">
+      {/* More Options Dropdown */}
+      <div className="ml-auto relative" ref={moreDropdownRef}>
         <button
-          className="p-2 hover:bg-gray-100 rounded text-gray-600"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            setIsMoreOpen(!isMoreOpen);
+          }}
+          className={`${baseBtn} ${isMoreOpen ? activeBtn : inactiveBtn}`}
           title="More Options"
         >
           <MoreHorizontal className="w-5 h-5" />
         </button>
+
+        {isMoreOpen && (
+          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 p-1 animate-in fade-in zoom-in-95 duration-100">
+            <div className="flex flex-col gap-1">
+              <button
+                onMouseDown={exec(
+                  () => editor.chain().focus().toggleStrike().run(),
+                  "Strikethrough",
+                )}
+                className={`flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-100 ${
+                  editor.isActive("strike")
+                    ? "bg-gray-100 text-black font-medium"
+                    : "text-gray-700"
+                }`}
+              >
+                <Strikethrough className="w-4 h-4" />
+                <span>Strikethrough</span>
+              </button>
+
+              <button
+                onMouseDown={exec(
+                  () => editor.chain().focus().setHorizontalRule().run(),
+                  "Horizontal Rule",
+                )}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-100 text-gray-700"
+              >
+                <Minus className="w-4 h-4" />
+                <span>Divider</span>
+              </button>
+
+              <button
+                onMouseDown={exec(
+                  () => editor.chain().focus().unsetAllMarks().run(),
+                  "Clear Formatting",
+                )}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-100 text-gray-700"
+              >
+                <RemoveFormatting className="w-4 h-4" />
+                <span>Clear Style</span>
+              </button>
+
+              <div className="h-px bg-gray-100 my-1" />
+
+              <button
+                onMouseDown={exec(
+                  () => editor.chain().focus().undo().run(),
+                  "Undo",
+                )}
+                disabled={!editor.can().undo()}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-100 disabled:opacity-50 text-gray-700"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>Undo</span>
+              </button>
+
+              <button
+                onMouseDown={exec(
+                  () => editor.chain().focus().redo().run(),
+                  "Redo",
+                )}
+                disabled={!editor.can().redo()}
+                className="flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-gray-100 disabled:opacity-50 text-gray-700"
+              >
+                <RotateCw className="w-4 h-4" />
+                <span>Redo</span>
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Sandbox Modal (for inserting NEW blocks) */}

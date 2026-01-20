@@ -14,15 +14,18 @@ export class TokenService {
   constructor(
     private readonly jwtService: JwtService,
     private readonly prisma: PrismaService,
-  ) { }
+  ) {}
 
   generateAccessToken(payload: JwtPayload): string {
     return this.jwtService.sign(payload, {
-      expiresIn: '15m',
+      expiresIn: '2h',
       secret: process.env.JWT_SECRET,
     });
   }
-  async generateRefreshToken(userId: string, rememberMe: boolean = false): Promise<{ token: string; expiresInMs: number }> {
+  async generateRefreshToken(
+    userId: string,
+    rememberMe: boolean = false,
+  ): Promise<{ token: string; expiresInMs: number }> {
     await this.prisma.refreshToken.deleteMany({
       where: { userId: userId },
     });
@@ -46,7 +49,6 @@ export class TokenService {
 
     return { token, expiresInMs };
   }
-
 
   async validateRefreshToken(token: string) {
     const refreshToken = await this.prisma.refreshToken.findUnique({
@@ -114,13 +116,12 @@ export class TokenService {
     });
   }
 
-
   generateEmailVerificationToken() {
     const token = crypto.randomBytes(32).toString('hex');
 
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 15);
 
-    return { token, expiresAt }
-  };
+    return { token, expiresAt };
+  }
 }

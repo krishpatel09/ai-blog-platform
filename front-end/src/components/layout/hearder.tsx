@@ -1,5 +1,9 @@
 import { Search, Bell, Edit, Menu, Settings, HelpCircle } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import axiosInstance from "@/services/api/axiosInstance";
+import { API_PATH } from "@/services/api/Apipath";
+import Tokenservice from "@/services/api/Tokenservice";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,8 +19,20 @@ interface HeaderProps {
 }
 
 export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
+  const router = useRouter();
   // You can replace this with actual user data from context/auth
   const username = "johndoe";
+
+  const handleLogout = async () => {
+    try {
+      await axiosInstance.post(API_PATH.AUTH.LOGOUT);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    } finally {
+      Tokenservice.removeUser();
+      router.push("/sign-in"); // or "/"
+    }
+  };
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
@@ -157,7 +173,10 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
 
               {/* Sign Out */}
               <div className="py-3 px-6">
-                <button className="text-sm text-gray-700 hover:text-black block mb-1">
+                <button
+                  onClick={handleLogout}
+                  className="text-sm text-gray-700 hover:text-black block mb-1 w-full text-left"
+                >
                   Sign out
                 </button>
                 <span className="text-xs text-gray-500">

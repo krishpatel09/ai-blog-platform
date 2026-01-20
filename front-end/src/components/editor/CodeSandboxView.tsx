@@ -1,56 +1,80 @@
 import { NodeViewWrapper, NodeViewProps } from "@tiptap/react";
 import { Code, Edit, Trash, Eye } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CodeSandboxModal } from "./CodeSandboxModal";
 
 export const CodeSandboxView = (props: NodeViewProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isEditable, setIsEditable] = useState(props.editor.isEditable);
+
+  // Sync isEditable state with editor updates
+  useEffect(() => {
+    const updateHandler = () => {
+      setIsEditable(props.editor.isEditable);
+    };
+
+    // Listen to transaction, update, and selectionUpdate to catch all state changes
+    props.editor.on("transaction", updateHandler);
+    props.editor.on("update", updateHandler);
+    props.editor.on("selectionUpdate", updateHandler);
+
+    // Also update immediately in case it changed before listener attach
+    setIsEditable(props.editor.isEditable);
+
+    return () => {
+      props.editor.off("transaction", updateHandler);
+      props.editor.off("update", updateHandler);
+      props.editor.off("selectionUpdate", updateHandler);
+    };
+  }, [props.editor]);
 
   const { html, css, js } = props.node.attrs;
 
   return (
     <NodeViewWrapper className="my-6">
       <div className="border rounded-lg overflow-hidden shadow-sm bg-white ring-1 ring-gray-200 selection:bg-none">
-        {/* Header */}
-        <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
-          <div className="flex items-center gap-2 text-gray-700">
-            <Code className="w-5 h-5 text-blue-500" />
-            <span className="font-semibold text-sm">
-              HTML + CSS + JS Payload
-            </span>
+        {/* Header - Only show in Edit Mode */}
+        {isEditable && (
+          <div className="bg-gray-50 px-4 py-3 border-b flex items-center justify-between">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Code className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-sm">
+                HTML + CSS + JS Payload
+              </span>
+            </div>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setIsPreviewOpen(!isPreviewOpen)}
+                className={`p-1.5 rounded transition-colors ${
+                  isPreviewOpen
+                    ? "bg-blue-100 text-blue-700"
+                    : "text-gray-500 hover:bg-gray-200"
+                }`}
+                title="Toggle Live Preview"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="p-1.5 text-gray-500 hover:bg-gray-200 rounded"
+                title="Edit Code"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => props.deleteNode()}
+                className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                title="Remove Block"
+              >
+                <Trash className="w-4 h-4" />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => setIsPreviewOpen(!isPreviewOpen)}
-              className={`p-1.5 rounded transition-colors ${
-                isPreviewOpen
-                  ? "bg-blue-100 text-blue-700"
-                  : "text-gray-500 hover:bg-gray-200"
-              }`}
-              title="Toggle Live Preview"
-            >
-              <Eye className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="p-1.5 text-gray-500 hover:bg-gray-200 rounded"
-              title="Edit Code"
-            >
-              <Edit className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => props.deleteNode()}
-              className="p-1.5 text-red-500 hover:bg-red-50 rounded"
-              title="Remove Block"
-            >
-              <Trash className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+        )}
 
         {/* Content Preview (Collapsed) */}
-        {!isPreviewOpen && (
+        {isEditable && !isPreviewOpen && (
           <div className="p-4 bg-gray-50/50 flex flex-col gap-2 font-mono text-xs text-gray-500">
             <div className="truncate">
               <span className="font-bold text-gray-700">HTML:</span>{" "}
@@ -68,8 +92,8 @@ export const CodeSandboxView = (props: NodeViewProps) => {
         )}
 
         {/* Live Preview */}
-        {isPreviewOpen && (
-          <div className="h-64 border-t relative">
+        {((isEditable && isPreviewOpen) || !isEditable) && (
+          <div className={`h-64 relative ${isEditable ? "border-b" : ""}`}>
             <iframe
               title="embedded-preview"
               srcDoc={`

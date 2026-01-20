@@ -10,3 +10,4 @@
 - implmement the editor
 - image upload to content geneare
 - back-end create api in create-blog
+  -check ths appwrite email ui
