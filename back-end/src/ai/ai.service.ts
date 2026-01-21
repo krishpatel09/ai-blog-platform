@@ -27,10 +27,8 @@ export class AiService {
 
     this.model = new ChatGoogleGenerativeAI({
       apiKey,
-      // 2026 Stable Standard
       model: 'gemini-2.5-flash',
       temperature: 0.7,
-      // Handles 429 errors by retrying with exponential backoff
       maxRetries: 3,
     });
   }

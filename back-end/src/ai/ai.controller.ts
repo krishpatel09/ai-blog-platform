@@ -9,9 +9,6 @@ export class AiController {
   @Post('generate-from-image')
   @UseGuards(JwtAuthGuard)
   async generateBlog(@Body('imageUrl') imageUrl: string) {
-    if (!imageUrl) {
-      throw new Error('Image URL is required');
-    }
     return this.aiService.generateBlogFromImage(imageUrl);
   }
 }

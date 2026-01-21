@@ -144,3 +144,16 @@ DRAFT
 PUBLISHED
 ARCHIVED
 }
+
+model TechPost {
+  id         Int      @id @default(autoincrement())
+  title      String?
+  image      String?
+  content    String?  @db.Text
+  language   String?
+  repository String?
+  
+  embedding  Unsupported("vector(768)")?
+
+  @@map("TechPost")
+}
