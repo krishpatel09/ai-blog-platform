@@ -11,6 +11,10 @@ back-end/
 │   ├── test-db-connection.js      # Database connection testing
 │   └── verify-env.js              # Environment variable verification
 ├── src/
+│   ├── ai/                        # AI & GenAI module
+│   │   ├── ai.controller.ts
+│   │   ├── ai.module.ts
+│   │   └── ai.service.ts
 │   ├── auth/                      # Authentication module
 │   │   ├── dto/                   # Data Transfer Objects
 │   │   │   ├── signin.dto.ts
@@ -129,6 +133,7 @@ front-end/
 │   │   ├── api/
 │   │   │   └── axiosInstance.ts
 │   │   ├── auth.service.ts
+│   │   ├── ai.service.ts
 │   │   └── user.service.ts
 │   ├── types/                     # TypeScript type definitions
 │   │   └── index.ts
@@ -155,6 +160,7 @@ front-end/
 
 ### Back-End
 
+- **`ai/`**: Handles AI generation logic (Gemini, LangChain integration)
 - **`auth/`**: Handles all authentication logic (sign-up, sign-in, token management, email verification)
 - **`common/`**: Shared utilities, decorators, filters, guards, interceptors, and email services
 - **`config/`**: Configuration files for different aspects of the application

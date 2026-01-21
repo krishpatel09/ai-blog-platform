@@ -14,6 +14,7 @@ import {
   RotateCcw,
   RotateCw,
   RemoveFormatting,
+  Sparkles,
 } from "lucide-react";
 import EmojiPicker, { EmojiClickData, Theme } from "emoji-picker-react";
 import { CodeSandboxModal } from "./CodeSandboxModal";
@@ -22,9 +23,15 @@ import { ToolbarDropdown } from "./ToolbarDropdown";
 
 interface EditorToolbarProps {
   editor: Editor | null;
+  coverImage: string | null;
+  setIsGenerating: (isGenerating: boolean) => void;
 }
 
-export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
+export const EditorToolbar = ({
+  editor,
+  coverImage,
+  setIsGenerating,
+}: EditorToolbarProps) => {
   const [, forceUpdate] = useState({});
   const [isSandboxOpen, setIsSandboxOpen] = useState(false);
   const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState(false);
@@ -495,6 +502,61 @@ export const EditorToolbar = ({ editor }: EditorToolbarProps) => {
           }}
         />
       )}
+
+      {/* AI Generate Button (Sparkles) */}
+      <div className="relative group">
+        <button
+          onMouseDown={async (e) => {
+            e.preventDefault();
+
+            // Validation
+            if (!editor) return;
+
+            if (!coverImage) {
+              alert("Please upload a cover image first to generate content!");
+              return;
+            }
+
+            if (
+              !confirm(
+                "This will generate a new blog post based on your cover image. Continue?",
+              )
+            ) {
+              return;
+            }
+
+            try {
+              setIsGenerating(true);
+              // Dynamic import to avoid circular dependencies
+              const { AiService } = await import("../../services/ai.service");
+
+              const generatedBlog =
+                await AiService.generateBlogFromImage(coverImage);
+
+              // Insert content
+              editor
+                .chain()
+                .focus()
+                .insertContent(`<h1>${generatedBlog.title}</h1>`)
+                .insertContent(generatedBlog.content)
+                .run();
+            } catch (error) {
+              console.error("AI Generation failed:", error);
+              alert("Failed to generate blog. Please try again.");
+            } finally {
+              setIsGenerating(false);
+            }
+          }}
+          className={`${baseBtn} ${inactiveBtn} text-purple-600 hover:text-purple-700 hover:bg-purple-50`}
+        >
+          <Sparkles className="w-5 h-5" />
+        </button>
+
+        {/* Simple Tooltip */}
+        <div className="absolute right-0 top-full mt-2 px-3 py-1.5 bg-gray-900 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50 pointer-events-none">
+          Generate content based on image
+        </div>
+      </div>
     </div>
   );
 };

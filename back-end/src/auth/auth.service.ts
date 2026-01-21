@@ -200,41 +200,16 @@ export class AuthService {
     };
   }
 
-  async refreshToken(
-    dto: RefreshTokenDto,
-    ipAddress?: string,
-    userAgent?: string,
-  ) {
+  async refreshToken(dto: RefreshTokenDto) {
     try {
       const oldRefreshToken = await this.tokenService.validateRefreshToken(
         dto.refreshToken,
       );
 
-      if (oldRefreshToken.isRevoked) {
-        await this.auditService.log({
-          userId: oldRefreshToken.userId,
-          action: 'TOKEN_REFRESH_FAILED',
-          ipAddress,
-          userAgent,
-          success: false,
-        });
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
-
-      // Only generate NEW accessToken
-      // Keep the SAME refreshToken (no rotation needed)
       const accessToken = this.tokenService.generateAccessToken({
         userId: oldRefreshToken.user.id,
         username: oldRefreshToken.user.username,
         email: oldRefreshToken.user.email,
-      });
-
-      await this.auditService.log({
-        userId: oldRefreshToken.user.id,
-        action: 'TOKEN_REFRESH',
-        ipAddress,
-        userAgent,
-        success: true,
       });
       console.log('Token refreshed successfully', accessToken);
       return {
@@ -242,13 +217,6 @@ export class AuthService {
         success: true,
         data: {
           accessToken,
-          user: {
-            id: oldRefreshToken.user.id,
-            username: oldRefreshToken.user.username,
-            email: oldRefreshToken.user.email,
-            emailVerified:
-              oldRefreshToken.user.security?.emailVerified || false,
-          },
         },
       };
     } catch (error) {

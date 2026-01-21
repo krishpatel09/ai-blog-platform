@@ -55,12 +55,6 @@ export default function BlogCoverMedia({
     fileInputRef.current?.click();
   };
 
-  console.log("Frontend: BlogCoverMedia Config:", {
-    urlEndpoint,
-    publicKey,
-    hasAuthenticator: !!imageKitAuthenticator,
-  });
-
   return (
     <IKContext
       urlEndpoint={urlEndpoint}

@@ -24,4 +24,7 @@ export const API_PATH = {
   IMAGEKIT: {
     AUTH: "/api/imagekit/auth",
   },
+  AI: {
+    GENERATE_FROM_IMAGE: "/api/ai/generate-from-image",
+  },
 };

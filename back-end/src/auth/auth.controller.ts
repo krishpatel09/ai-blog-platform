@@ -65,18 +65,12 @@ export class AuthController {
 
   @UseGuards(RefreshTokenGuard)
   @Post('refresh-token')
-  async refresh(
-    @Req() req: any,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-  ) {
-    // FIX: Extract token from req.user (populated by RefreshTokenStrategy via Cookie)
-    // The strategy creates req.user = { id, refreshToken, ... }
+  async refresh(@Req() req: any) {
     const dto: RefreshTokenDto = {
       refreshToken: req.user.refreshToken,
     };
     console.log('Backend: Refreshing token for user:', req.user.id);
-    return this.authService.refreshToken(dto, ip, userAgent);
+    return this.authService.refreshToken(dto);
   }
 
   @Public()

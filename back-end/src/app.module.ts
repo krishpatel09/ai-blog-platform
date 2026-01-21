@@ -14,6 +14,7 @@ import { TagsModule } from './tags/tags.module';
 import { UsersModule } from './users/users.module';
 import { BlogModule } from './blog/blog.module';
 import { ImageKitModule } from './ImageKit/imagekit.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -27,7 +28,9 @@ import { ImageKitModule } from './ImageKit/imagekit.module';
     TagsModule,
     UsersModule,
     BlogModule,
+    BlogModule,
     ImageKitModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [

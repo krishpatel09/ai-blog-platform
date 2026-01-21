@@ -38,7 +38,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response Interceptor
@@ -66,9 +66,6 @@ axiosInstance.interceptors.response.use(
       }
       originalConfig._retry = true;
       isRefreshing = true;
-      console.log(
-        "🔄 [Axios] Access Token expired (401). Attempting refresh..."
-      ); // Debug log
 
       try {
         const response = await axios.post(
@@ -76,37 +73,28 @@ axiosInstance.interceptors.response.use(
           {},
           {
             withCredentials: true,
-          }
+          },
         );
         const accessToken =
           response.data?.accessToken || response.data?.data?.accessToken;
 
         if (!accessToken) throw new Error("No access token received");
 
-        console.log(
-          "✅ [Axios] Refresh successful. Retrying original request..."
-        ); // Debug log
         Tokenservice.updateLocalAccessToken(accessToken);
         processQueue(null, accessToken);
 
         originalConfig.headers["Authorization"] = `Bearer ${accessToken}`;
         return axiosInstance(originalConfig);
       } catch (refreshError: any) {
-        console.error(
-          "❌ [Axios] Refresh failed. Redirecting to login...",
-          refreshError
-        ); // Debug log
         processQueue(refreshError, null);
         Tokenservice.removeUser();
-
-        window.location.href = "/sign-in";
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

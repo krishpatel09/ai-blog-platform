@@ -154,6 +154,7 @@ export default function NewBlogPage() {
               onFocus={() => setActiveHelper("editor")}
               isReadOnly={isPreviewMode}
               onChange={setContent}
+              coverImage={coverImage}
             />
           </div>
 
