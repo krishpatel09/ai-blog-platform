@@ -3,10 +3,10 @@ import Image from "next/image";
 import { BlogCardProps } from "@/types/blog.types";
 import { Calendar, Clock } from "lucide-react";
 
-export default function BlogCard({ blog, variant = "default" }: BlogCardProps) {
+export default function BlogCard({ blog }: BlogCardProps) {
   return (
     <Link
-      href={`/blog/${blog.id}`}
+      href={`/@${blog.author.username}/${blog.slug}`}
       className="group flex flex-col md:flex-row gap-6  rounded-3xl border border-transparent transition-all duration-300 cursor-pointer"
     >
       {/* Content Section - Left */}
@@ -14,7 +14,7 @@ export default function BlogCard({ blog, variant = "default" }: BlogCardProps) {
         {/* Author Info */}
         <div className="flex items-center gap-3 mb-3">
           <div className="relative w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden">
-            {blog.author.avatar ? (
+            {/* {blog.author.avatar ? (
               <Image
                 src={blog.author.avatar}
                 alt={blog.author.name}
@@ -23,7 +23,8 @@ export default function BlogCard({ blog, variant = "default" }: BlogCardProps) {
               />
             ) : (
               blog.author.name.charAt(0).toUpperCase()
-            )}
+            )} */}
+            krish
           </div>
           <span className="text-sm font-medium text-gray-700 hover:text-black transition-colors">
             {blog.author.name}
@@ -57,10 +58,10 @@ export default function BlogCard({ blog, variant = "default" }: BlogCardProps) {
           </div>
           {blog.tags.slice(0, 2).map((tag) => (
             <span
-              key={tag.id}
+              key={tag}
               className="bg-gray-100 hover:bg-gray-200 px-3 py-1 rounded-full text-xs font-medium text-gray-700 transition-colors"
             >
-              {tag.name}
+              {tag}
             </span>
           ))}
         </div>

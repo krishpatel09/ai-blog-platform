@@ -16,22 +16,24 @@ export interface Tag {
 export interface Blog {
   id: string;
   title: string;
+  slug: string;
   excerpt: string;
-  content?: string;
+  content?: any;
   coverImage?: string;
   author: Author;
-  tags: Tag[];
+  tags: string[];
   publishedAt: string;
-  readTime: number; // in minutes
+  readTime: number;
   views?: number;
   likes?: number;
+  likeCount?: number;
   isPublished: boolean;
   isDraft: boolean;
 }
 
 export interface BlogCardProps {
   blog: Blog;
-  variant?: 'default' | 'compact';
+  variant?: "default" | "compact";
 }
 
 export interface StatsData {

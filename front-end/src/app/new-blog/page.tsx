@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import BlogEditor from "@/components/editor/BlogEditor";
 import BlogHeader from "@/components/blog/BlogHeader";
 import BlogSidebar from "@/components/blog/BlogSidebar";
@@ -13,6 +13,8 @@ import BlogMetaInput from "@/components/blog/BlogMetaInput";
 import BlogPublishView from "@/components/blog/BlogPublishView";
 import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
+import { blogSchema } from "@/lib/zod/blog/blog.schema";
+import { ZodError } from "zod";
 
 export default function NewBlogPage() {
   const router = useRouter();
@@ -40,6 +42,9 @@ export default function NewBlogPage() {
   // Preview Mode State
   const [isPreviewMode, setIsPreviewMode] = useState(false);
 
+  // Validation State
+  const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
   const handleRemoveMedia = () => {
     setCoverImage(null);
     setCoverVideo(null);
@@ -52,11 +57,33 @@ export default function NewBlogPage() {
   };
 
   const handlePublishClick = () => {
-    setShowPublishView(true);
+    try {
+      blogSchema.parse({
+        title,
+        content,
+        tags,
+        coverImage,
+      });
+
+      setValidationErrors([]);
+      setShowPublishView(true);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        const errors = error.issues.map((err) => err.message);
+        setValidationErrors(errors);
+      } else {
+        console.error("Validation error:", error);
+      }
+    }
   };
 
+  const isPublishingRef = useRef(false);
+
   const handleFinalPublish = async (publishedAt: string | null) => {
+    if (isPublishingRef.current) return;
+
     try {
+      isPublishingRef.current = true;
       setIsPublishing(true);
       const blogData = {
         title,
@@ -72,8 +99,7 @@ export default function NewBlogPage() {
 
       if (response.data && response.data.slug) {
         console.log("Published!", response.data);
-        // Redirect to the newly created blog post
-        router.push(`/blog/${response.data.slug}`);
+        router.push(`/${response.data.user.username}/${response.data.slug}`);
       } else {
         throw new Error("Invalid response from server");
       }
@@ -81,10 +107,10 @@ export default function NewBlogPage() {
       console.error("Failed to publish:", error);
       const errorMessage =
         error.response?.data?.message || "Failed to publish blog";
-      alert(errorMessage);
     } finally {
-      setIsPublishing(false);
-      setShowPublishView(false);
+      if (!publishedAt) {
+        setShowPublishView(false);
+      }
     }
   };
 
@@ -174,7 +200,12 @@ export default function NewBlogPage() {
         )}
 
         {/* Publishing Tips Sidebar - Hidden in Preview */}
-        {!isPreviewMode && <BlogSidebar activeHelper={activeHelper} />}
+        {!isPreviewMode && (
+          <BlogSidebar
+            activeHelper={activeHelper}
+            validationErrors={validationErrors}
+          />
+        )}
       </div>
 
       {/* Exit Modal */}

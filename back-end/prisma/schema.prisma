@@ -77,7 +77,6 @@ model Tag {
   description String?  @db.VarChar(255)
   createdAt DateTime @default(now())
 
-  posts     PostTag[]
   @@index([slug, name])
 }
 
@@ -88,6 +87,7 @@ model Post {
   content       Json
   excerpt       String?     @db.VarChar(300)
   coverImage    String?
+  tags          String[]    @default([])
   status        PostStatus  @default(DRAFT)
   publishedAt   DateTime?
   readTime      Int?
@@ -103,34 +103,15 @@ model Post {
 
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tags          PostTag[]
-  //comments      Comment[]
-  //likes         Like[]
-  //bookmarks     Bookmark[]
-  //readingHistory ReadingHistory[]
-  //shares        Share[]
-  //reports       Report[]
 
   @@index([userId])
   @@index([slug])
   @@index([status, publishedAt])
   @@index([isFeatured, publishedAt])
-  //@@index([viewCount])
-  //@@index([likeCount])
+  @@index([tags])
 }
 
-model PostTag {
-  id     String @id @default(uuid())
-  postId String
-  tagId  String
 
-  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, tagId])
-  @@index([postId])
-  @@index([tagId])
-}
 
 
 
@@ -145,15 +126,3 @@ PUBLISHED
 ARCHIVED
 }
 
-model TechPost {
-  id         Int      @id @default(autoincrement())
-  title      String?
-  image      String?
-  content    String?  @db.Text
-  language   String?
-  repository String?
-  
-  embedding  Unsupported("vector(768)")?
-
-  @@map("TechPost")
-}

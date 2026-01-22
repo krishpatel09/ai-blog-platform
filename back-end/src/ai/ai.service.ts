@@ -64,8 +64,6 @@ export class AiService {
 
       const imageDescription = visionResponse.content.toString();
 
-      /** STEP 3: STRUCTURED BLOG GENERATION */
-      // This forces the AI to return a validated JSON object matching our schema
       const structuredLlm = this.model.withStructuredOutput(BlogSchema);
 
       const result = await structuredLlm.invoke([

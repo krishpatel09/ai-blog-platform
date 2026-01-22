@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
 import { X, Loader2, Plus } from "lucide-react";
-import CreateTagModal from "./CreateTagModal";
 
 interface Tag {
   id: string;
@@ -67,7 +66,7 @@ export default function BlogMetaInput({
         !inputRef.current.contains(event.target as Node)
       ) {
         setShowDropdown(false);
-        setShowInlineCreate(false); // Close inline form on outside click
+        setShowInlineCreate(false);
       }
     };
 
@@ -102,19 +101,16 @@ export default function BlogMetaInput({
         description: newTagDescription,
       });
 
-      // Refresh tags and add the new one immediately
       await fetchTags();
       if (tags.length < 4 && !tags.includes(newTagName)) {
         setTags([...tags, newTagName]);
       }
 
-      // Reset and close inline form
       setNewTagName("");
       setNewTagDescription("");
       setShowInlineCreate(false);
     } catch (error) {
       console.error("Failed to create tag:", error);
-      // Optional: Add error handling/toast here
     } finally {
       setIsCreatingTag(false);
     }

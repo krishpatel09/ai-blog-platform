@@ -5,7 +5,6 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
-
 import slugify from 'slugify';
 import { SlugService } from './service/slug.service';
 
@@ -19,10 +18,14 @@ export class BlogService {
   async create(userId: string, createPostDto: CreatePostDto) {
     const { title, content, tags, coverImage, publishedAt } = createPostDto;
 
-    console.log('postdto', userId);
-    console.log('postdto', createPostDto);
+    let slug = await this.slugService.generateUniqueSlug(title);
+    if (!slug) {
+      throw new BadRequestException('Failed to generate unique slug');
+    }
+    console.log('slug', slug);
+    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' = 'DRAFT';
 
-    const slug = await this.slugService.generateUniqueSlug(title);
+    const finalPublishDate = publishedAt ? new Date(publishedAt) : null;
 
     try {
       const post = await this.prisma.post.create({
@@ -31,39 +34,15 @@ export class BlogService {
           slug,
           content,
           coverImage,
-          publishedAt: publishedAt ? new Date(publishedAt) : undefined,
-          status: publishedAt ? 'PUBLISHED' : 'DRAFT',
+          publishedAt: finalPublishDate,
+          status,
           userId,
           tags:
             tags && tags.length > 0
-              ? {
-                  create: Array.from(
-                    new Set(tags.map((t) => t.toLowerCase())),
-                  ).map((normalizedName) => {
-                    return {
-                      tag: {
-                        connectOrCreate: {
-                          where: { name: normalizedName },
-                          create: {
-                            name: normalizedName,
-                            slug: slugify(normalizedName, {
-                              lower: true,
-                              strict: true,
-                            }),
-                          },
-                        },
-                      },
-                    };
-                  }),
-                }
-              : undefined,
+              ? Array.from(new Set(tags.map((t) => t.toLowerCase())))
+              : [],
         },
         include: {
-          tags: {
-            include: {
-              tag: true,
-            },
-          },
           user: {
             select: {
               id: true,
@@ -74,23 +53,40 @@ export class BlogService {
           },
         },
       });
-
+      console.log('post', post);
       return post;
     } catch (error) {
-      console.error('Error creating post:', error);
       throw new BadRequestException(`Failed to create post: ${error.message}`);
     }
   }
 
+  async findAllLive() {
+    return this.prisma.post.findMany({
+      where: {
+        status: 'PUBLISHED',
+        publishedAt: {
+          lte: new Date(),
+        },
+      },
+      orderBy: { publishedAt: 'desc' },
+      include: {
+        user: { select: { name: true, avatar: true, username: true } },
+      },
+    });
+  }
+
+  async findUserPosts(userId: string) {
+    return this.prisma.post.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async findBySlug(slug: string) {
+    console.log('slug', slug);
     const post = await this.prisma.post.findUnique({
       where: { slug },
       include: {
-        tags: {
-          include: {
-            tag: true,
-          },
-        },
         user: {
           select: {
             id: true,
@@ -103,9 +99,36 @@ export class BlogService {
     });
 
     if (!post) {
+      console.log('Post not found in DB for slug:', slug);
       throw new NotFoundException('Post not found');
     }
 
+    const isFuture = post.publishedAt && post.publishedAt > new Date();
+    if (post.status !== 'PUBLISHED' || isFuture) {
+      console.log('Post not published or scheduled for future:', {
+        status: post.status,
+        publishedAt: post.publishedAt,
+      });
+      throw new NotFoundException('Post not found');
+    }
+    console.log('post', post);
     return post;
+  }
+
+  async likePost(postId: string) {
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found');
+    }
+
+    return this.prisma.post.update({
+      where: { id: postId },
+      data: {
+        likeCount: { increment: 1 },
+      },
+    });
   }
 }

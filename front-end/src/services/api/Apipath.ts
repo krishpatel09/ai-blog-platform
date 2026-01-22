@@ -17,9 +17,9 @@ export const API_PATH = {
     GET_ALL: "/api/tags",
   },
   BLOG: {
-    CREATE: "/api/blog",
+    CREATE: "/api/blog/create",
     GET_BY_SLUG: "/api/blog",
-    GET_ALL: "/api/blog",
+    GET_LIVE: "/api/blog/live",
   },
   IMAGEKIT: {
     AUTH: "/api/imagekit/auth",

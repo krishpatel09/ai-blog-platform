@@ -5,6 +5,7 @@ interface HelperItem {
 
 interface BlogSidebarProps {
   activeHelper: "default" | "title" | "tags" | "editor";
+  validationErrors?: string[];
 }
 
 const helperContent: Record<string, HelperItem> = {
@@ -43,10 +44,25 @@ const helperContent: Record<string, HelperItem> = {
   },
 };
 
-export default function BlogSidebar({ activeHelper }: BlogSidebarProps) {
+export default function BlogSidebar({
+  activeHelper,
+  validationErrors,
+}: BlogSidebarProps) {
   return (
     <aside className="hidden lg:block w-80 shrink-0">
-      <div className="sticky top-20">
+      <div className="sticky top-20 text-balance space-y-6">
+        {validationErrors && validationErrors.length > 0 && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-4">
+            <h3 className="text-red-800 font-semibold mb-2 flex items-center gap-2">
+              Please fix the following:
+            </h3>
+            <ul className="list-disc list-inside text-sm text-red-700 space-y-1">
+              {validationErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          </div>
+        )}
         <div
           key={activeHelper}
           className="animate-in fade-in slide-in-from-top-8 duration-200"

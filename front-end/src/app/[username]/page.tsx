@@ -13,6 +13,7 @@ import {
   MoreHorizontal,
   Bookmark,
   Lock as LockIcon,
+  Clock,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -38,6 +39,7 @@ const userPosts: Blog[] = [
     excerpt:
       "How I transitioned from a different career into web development and what I learned along the way.",
     coverImage: "https://picsum.photos/seed/30/400/300",
+    slug: "my-journey-into-web-development",
     author: {
       id: "1",
       name: "John Doe",
@@ -53,58 +55,21 @@ const userPosts: Blog[] = [
   },
   {
     id: "2",
-    title: "My Journey into Web Development",
+    title: "Understanding React Server Components",
     excerpt:
-      "How I transitioned from a different career into web development and what I learned along the way.",
-    coverImage: "https://picsum.photos/seed/30/400/300",
+      "A deep dive into how React Server Components work and why they are a game changer for web performance.",
+    coverImage: "https://picsum.photos/seed/31/400/300",
+    slug: "understanding-react-server-components",
     author: {
       id: "1",
       name: "John Doe",
       username: "johndoe",
       avatar: "",
     },
-    tags: [{ id: "1", name: "Career", slug: "career" }],
-    publishedAt: "2026-01-10",
-    readTime: 7,
-    views: 542,
-    isPublished: true,
-    isDraft: false,
-  },
-  {
-    id: "3",
-    title: "My Journey into Web Development",
-    excerpt:
-      "How I transitioned from a different career into web development and what I learned along the way.",
-    coverImage: "https://picsum.photos/seed/30/400/300",
-    author: {
-      id: "1",
-      name: "John Doe",
-      username: "johndoe",
-      avatar: "",
-    },
-    tags: [{ id: "1", name: "Career", slug: "career" }],
-    publishedAt: "2026-01-10",
-    readTime: 7,
-    views: 542,
-    isPublished: true,
-    isDraft: false,
-  },
-  {
-    id: "4",
-    title: "My Journey into Web Development",
-    excerpt:
-      "How I transitioned from a different career into web development and what I learned along the way.",
-    coverImage: "https://picsum.photos/seed/30/400/300",
-    author: {
-      id: "1",
-      name: "John Doe",
-      username: "johndoe",
-      avatar: "",
-    },
-    tags: [{ id: "1", name: "Career", slug: "career" }],
-    publishedAt: "2026-01-10",
-    readTime: 7,
-    views: 542,
+    tags: [{ id: "2", name: "React", slug: "react" }],
+    publishedAt: "2026-01-12",
+    readTime: 10,
+    views: 120,
     isPublished: true,
     isDraft: false,
   },
@@ -115,7 +80,7 @@ export default function UserProfilePage() {
   const username = params.username as string;
   const user = getUserData(username);
   const [activeTab, setActiveTab] = useState<"home" | "lists" | "about">(
-    "home"
+    "home",
   );
 
   return (
@@ -159,7 +124,11 @@ export default function UserProfilePage() {
             {activeTab === "home" && (
               <div className="space-y-10">
                 {userPosts.map((post) => (
-                  <div key={post.id} className="group cursor-pointer">
+                  <Link
+                    href={`/@${user.username}/${post.slug}-${post.id}`}
+                    key={post.id}
+                    className="group cursor-pointer block"
+                  >
                     <div className="flex items-start gap-6">
                       <div className="flex-1">
                         <h3 className="text-xl font-extrabold text-gray-900 mb-2 group-hover:underline decoration-2 underline-offset-4 decoration-gray-900 leading-tight">
@@ -172,7 +141,19 @@ export default function UserProfilePage() {
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span>Just now</span>
+                            <span>
+                              {new Date(post.publishedAt).toLocaleDateString(
+                                "en-US",
+                                {
+                                  month: "short",
+                                  day: "numeric",
+                                },
+                              )}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock size={16} />
+                              {post.readTime} min read
+                            </span>
                           </div>
                           <div className="flex items-center gap-4 text-gray-400">
                             <button className="hover:text-gray-900 transition-colors">
@@ -184,9 +165,19 @@ export default function UserProfilePage() {
                           </div>
                         </div>
                       </div>
+                      {post.coverImage && (
+                        <div className="w-40 h-28 shrink-0 relative rounded-lg overflow-hidden bg-gray-100">
+                          <Image
+                            src={post.coverImage}
+                            alt={post.title}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
                     </div>
                     <div className="h-px bg-gray-100 mt-10" />
-                  </div>
+                  </Link>
                 ))}
               </div>
             )}

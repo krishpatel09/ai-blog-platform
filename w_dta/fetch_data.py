@@ -10,7 +10,7 @@ ds = load_dataset(
     "bigcode/the-stack", 
     data_dir="data/python", 
     split="train", 
-    streaming=True 
+    streaming=True
 )
 
 # 3. Save with specific fields including Title and Image
