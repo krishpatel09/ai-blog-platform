@@ -23,6 +23,8 @@ model User {
   tokens      RefreshToken[]
   auditLogs   AuditLog[]
   posts       Post[]
+  bookmarkLists BookmarkList[]
+
 }
 
 model UserSecurity {
@@ -103,6 +105,8 @@ model Post {
 
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarkItems BookmarkItem[]
+
 
   @@index([userId])
   @@index([slug])
@@ -111,6 +115,36 @@ model Post {
   @@index([tags])
 }
 
+
+//===================Bookmark Model====================
+
+model BookmarkList {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(50)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     BookmarkItem[]
+
+  @@unique([userId, name]) 
+  @@index([userId])
+}
+
+model BookmarkItem {
+  id         String   @id @default(uuid())
+  listId     String
+  postId     String
+  createdAt  DateTime @default(now())
+
+  list       BookmarkList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  post       Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, postId]) 
+  @@index([listId])
+  @@index([postId])
+}
 
 
 

@@ -1,23 +1,25 @@
 import {
-    Injectable,
-    ExecutionContext,
-    UnauthorizedException,
+  Injectable,
+  ExecutionContext,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
-export class RefreshTokenGuard extends AuthGuard('jwt-refresh') {
-    constructor() {
-        super();
-    }
+export class RefreshTokenGuard extends AuthGuard('refresh-jwt') {
+  constructor() {
+    super();
+  }
 
-    handleRequest(err: any, user: any, info: any) {
-        if (err || !user) {
-            throw (
-                err ||
-                new UnauthorizedException('Your session has expired. Please log in again.')
-            );
-        }
-        return user;
+  handleRequest(err: any, user: any, info: any) {
+    if (err || !user) {
+      throw (
+        err ||
+        new UnauthorizedException(
+          'Your session has expired. Please log in again.',
+        )
+      );
     }
+    return user;
+  }
 }

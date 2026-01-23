@@ -14,6 +14,8 @@ import { Blog } from "@/types/blog.types";
 import { Bookmark, Clock, Trash2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import bookmarkService from "@/services/bookmark.service";
+import LibraryLists from "@/components/my-library/LibraryLists";
 
 // Mock saved blogs
 const savedBlogs: Blog[] = [
@@ -34,6 +36,7 @@ const savedBlogs: Blog[] = [
     readTime: 15,
     isPublished: true,
     isDraft: false,
+    coverVideo: null,
   },
 ];
 
@@ -44,10 +47,34 @@ export default function LibraryPage() {
     | "highlights"
     | "reading-history"
     | "responses"
-  >("saved-lists");
+  >("your-lists");
   const [showDescription, setShowDescription] = useState(false);
   const [listName, setListName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+  const handleCreateList = async () => {
+    if (!listName.trim()) return;
+
+    try {
+      setIsCreating(true);
+      await bookmarkService.createList(listName);
+
+      // Dispatch event to update lists
+      window.dispatchEvent(new Event("bookmark-list-updated"));
+
+      // Reset and close
+      setListName("");
+      setShowDescription(false);
+      setIsPrivate(false);
+      setIsDialogOpen(false);
+    } catch (error) {
+      console.error("Failed to create list:", error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -58,7 +85,7 @@ export default function LibraryPage() {
             Your library
           </h1>
 
-          <Dialog>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
               <button className="px-5 py-2 rounded-full bg-green-600 text-white text-sm font-medium hover:bg-green-700 transition-colors">
                 New list
@@ -117,20 +144,22 @@ export default function LibraryPage() {
                   </div>
 
                   <div className="flex items-center justify-center gap-4 pt-4">
-                    <DialogClose asChild>
-                      <button className="px-6 py-2 rounded-full border border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-all font-medium">
-                        Cancel
-                      </button>
-                    </DialogClose>
+                    <button
+                      onClick={() => setIsDialogOpen(false)}
+                      className="px-6 py-2 rounded-full border border-gray-300 text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-all font-medium"
+                    >
+                      Cancel
+                    </button>
                     <button
                       className={`px-6 py-2 rounded-full text-white font-medium transition-all ${
-                        listName
+                        listName && !isCreating
                           ? "bg-green-600 hover:bg-green-700"
                           : "bg-green-200 cursor-not-allowed"
                       }`}
-                      disabled={!listName}
+                      disabled={!listName || isCreating}
+                      onClick={handleCreateList}
                     >
-                      Create
+                      {isCreating ? "Creating..." : "Create"}
                     </button>
                   </div>
                 </div>
@@ -165,7 +194,9 @@ export default function LibraryPage() {
 
           {/* Tab Content */}
           <div className="mt-8">
-            {activeTab === "saved-lists" ? (
+            {activeTab === "your-lists" ? (
+              <LibraryLists />
+            ) : activeTab === "saved-lists" ? (
               <div className="space-y-4">
                 {savedBlogs.length > 0 ? (
                   savedBlogs.map((blog) => (
@@ -233,8 +264,6 @@ export default function LibraryPage() {
             ) : (
               <div className="text-center py-16">
                 <p className="text-gray-500">
-                  {activeTab === "your-lists" &&
-                    "Create and manage your specific lists here."}
                   {activeTab === "highlights" &&
                     "Your highlights will appear here."}
                   {activeTab === "reading-history" &&

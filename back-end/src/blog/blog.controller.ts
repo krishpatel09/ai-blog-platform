@@ -11,13 +11,14 @@ import {
 import { BlogService } from './blog.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 @Controller('blog')
+@UseGuards(JwtAuthGuard)
 export class BlogController {
   constructor(private readonly blogService: BlogService) {}
 
   @Post('create')
-  @UseGuards(JwtAuthGuard)
   create(@Request() req, @Body() createPostDto: CreatePostDto) {
     return this.blogService.create(req.user.id, createPostDto);
   }
@@ -27,6 +28,7 @@ export class BlogController {
     return this.blogService.findAllLive();
   }
 
+  @Public()
   @Get(':slug')
   findOne(@Param('slug') slug: string) {
     return this.blogService.findBySlug(slug);

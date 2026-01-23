@@ -21,14 +21,16 @@ export interface Blog {
   content?: any;
   coverImage?: string;
   author: Author;
-  tags: string[];
+  tags: Tag[];
   publishedAt: string;
   readTime: number;
   views?: number;
   likes?: number;
   likeCount?: number;
+  commentCount?: number;
   isPublished: boolean;
   isDraft: boolean;
+  coverVideo?: string;
 }
 
 export interface BlogCardProps {

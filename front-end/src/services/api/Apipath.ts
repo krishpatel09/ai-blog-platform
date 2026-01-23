@@ -27,4 +27,11 @@ export const API_PATH = {
   AI: {
     GENERATE_FROM_IMAGE: "/api/ai/generate-from-image",
   },
+  BOOKMARK: {
+    CREATE_LIST: "/api/bookmarks/create-list",
+    GET_LISTS: "/api/bookmarks/get-lists",
+    GET_LIST_DETAILS: "/api/bookmarks/get-list-details",
+    ADD_ITEM: "/api/bookmarks/add-item",
+    REMOVE_ITEM: "/api/bookmarks/remove-item",
+  },
 };

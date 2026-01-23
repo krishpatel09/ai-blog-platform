@@ -205,7 +205,7 @@ export class AuthService {
       const oldRefreshToken = await this.tokenService.validateRefreshToken(
         dto.refreshToken,
       );
-
+      console.log('Old refresh token', oldRefreshToken);
       const accessToken = this.tokenService.generateAccessToken({
         userId: oldRefreshToken.user.id,
         username: oldRefreshToken.user.username,

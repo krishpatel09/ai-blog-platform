@@ -15,6 +15,7 @@ import { UsersModule } from './users/users.module';
 import { BlogModule } from './blog/blog.module';
 import { ImageKitModule } from './ImageKit/imagekit.module';
 import { AiModule } from './ai/ai.module';
+import { BookmarkModule } from './bookmark/bookmark.module';
 
 @Module({
   imports: [
@@ -28,9 +29,9 @@ import { AiModule } from './ai/ai.module';
     TagsModule,
     UsersModule,
     BlogModule,
-    BlogModule,
     ImageKitModule,
     AiModule,
+    BookmarkModule,
   ],
   controllers: [AppController],
   providers: [

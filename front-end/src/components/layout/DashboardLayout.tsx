@@ -27,7 +27,7 @@ export default function DashboardLayout({
       {/* Header */}
       <Header isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
 
-      <div className="flex w-full max-w-[1336px] mx-auto pt-24">
+      <div className="flex w-full max-w-[1500px] mx-auto pt-24">
         {/* Left Sidebar - Collapsible */}
         <div
           className={`hidden md:block shrink-0 sticky top-20 h-[calc(100vh-5rem)] transition-all duration-700 ease-in-out overflow-hidden ${

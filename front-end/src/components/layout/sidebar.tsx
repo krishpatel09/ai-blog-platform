@@ -5,12 +5,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Home, Bookmark, FileText, BarChart2, User, Plus } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   isCollapsed: boolean;
@@ -18,14 +14,12 @@ interface SidebarProps {
 
 export default function Sidebar({ isCollapsed }: SidebarProps) {
   const pathname = usePathname();
-
-  // You can replace this with actual user data from context/auth
-  const username = "johndoe";
+  const { user } = useAuth();
 
   const menu = [
     { name: "Home", icon: Home, href: "/" },
     { name: "Library", icon: Bookmark, href: "/library" },
-    { name: "Profile", icon: User, href: `/${username}` },
+    { name: "Profile", icon: User, href: `/${user?.username}` },
     { name: "Stories", icon: FileText, href: "/story" },
     { name: "Stats", icon: BarChart2, href: "/monitaring" },
   ];

@@ -5,9 +5,13 @@
 5.email in tradmark check karva
 6.ip addrsss check this
 
-# most important task
+1.follwer implement then blogcard in more option check now
 
-- implmement the editor
-- image upload to content geneare
-- back-end create api in create-blog
-  -check ths appwrite email ui
+# tommorow task
+
+home api public
+list api public
+user profile api public (user name wise)
+aboute anythings
+
+profile in - name,follower and following
