@@ -154,6 +154,8 @@ export class AuthService {
             username: user.username,
             email: user.email,
             emailVerified: user.security.emailVerified,
+            avatar: user.avatar,
+            name: user.name,
           },
         },
       };
@@ -205,25 +207,51 @@ export class AuthService {
       const oldRefreshToken = await this.tokenService.validateRefreshToken(
         dto.refreshToken,
       );
-      console.log('Old refresh token', oldRefreshToken);
+      console.log('Old refresh token validated', oldRefreshToken.id);
+
+      // Determine if 'rememberMe' was used based on the token's original lifespan
+      // standard is 1 day (approx 86400000ms), remembered is 7 days
+      const duration =
+        oldRefreshToken.expiresAt.getTime() -
+        oldRefreshToken.createdAt.getTime();
+      const rememberMe = duration > 24 * 60 * 60 * 1000 * 1.5; // > 36 hours implies 7 days
+
+      // Delete the old refresh token (Rotation)
+      await this.tokenService.deleteRefreshToken(dto.refreshToken);
+
+      // Generate new access token
       const accessToken = this.tokenService.generateAccessToken({
         userId: oldRefreshToken.user.id,
         username: oldRefreshToken.user.username,
         email: oldRefreshToken.user.email,
       });
-      console.log('Token refreshed successfully', accessToken);
+
+      // Generate new refresh token
+      const { token: refreshToken, expiresInMs } =
+        await this.tokenService.generateRefreshToken(
+          oldRefreshToken.user.id,
+          rememberMe,
+        );
+
+      console.log(
+        'Token rotated successfully for user:',
+        oldRefreshToken.user.id,
+      );
+
       return {
         message: 'Token refreshed successfully',
         success: true,
         data: {
           accessToken,
+          refreshToken, // Important: Return this so CookieInterceptor can set the new cookie
+          expiresInMs,
         },
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      console.error(error);
+      console.error('Refresh Token Error:', error);
       throw new InternalServerErrorException('Internal server error');
     }
   }
@@ -285,6 +313,8 @@ export class AuthService {
           username: userSecurity.user.username,
           email: userSecurity.user.email,
           emailVerified: true,
+          avatar: userSecurity.user.avatar,
+          name: userSecurity.user.name,
         },
       },
     };

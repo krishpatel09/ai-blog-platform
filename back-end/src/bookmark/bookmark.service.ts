@@ -93,6 +93,45 @@ export class BookmarkService {
     return lists;
   }
 
+  // Get public lists by username
+  async findPublicListsByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // For now assuming all lists are public or we filter by visibility if implemented
+    // The previous mockup showed "Private" badge, implying visibility exists.
+    // Checking schema... Schema doesn't have visibility field on BookmarkList.
+    // So distinct public/private logic might not exist in backend yet.
+    // Returning all lists for now as requested "Display all lists for the user".
+    // Ideally we'd add visibility field.
+
+    return this.prisma.bookmarkList.findMany({
+      where: { userId: user.id }, // Add visibility filter here later
+      include: {
+        _count: {
+          select: { items: true },
+        },
+        items: {
+          orderBy: { createdAt: 'desc' },
+          take: 4, // Preview items
+          include: {
+            post: {
+              select: {
+                coverImage: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
   async getListDetails(userId: string, listId: string) {
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },

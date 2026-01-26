@@ -1,7 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import BlogEditor from "@/components/editor/BlogEditor";
 import BlogHeader from "@/components/blog-publish/BlogHeader";
 import BlogSidebar from "@/components/blog-publish/BlogSidebar";
@@ -18,6 +19,13 @@ import { ZodError } from "zod";
 
 export default function NewBlogPage() {
   const router = useRouter();
+  const { user, isLoading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push("/sign-in");
+    }
+  }, [user, authLoading, router]);
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<any>(null);
@@ -113,6 +121,14 @@ export default function NewBlogPage() {
       }
     }
   };
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-black"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

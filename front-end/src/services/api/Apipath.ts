@@ -9,8 +9,10 @@ export const API_PATH = {
     CLERK_VERIFY: "/api/auth/clerk-verify",
   },
   USERS: {
+    GET_PROFILE: "/api/users/me",
     FORGOT_PASSWORD: "/api/users/forgot-password",
     RESET_PASSWORD: "/api/users/reset-password",
+    GET_PUBLIC_PROFILE: "/api/users/@",
   },
   TAGS: {
     CREATE: "/api/tags",
@@ -20,6 +22,8 @@ export const API_PATH = {
     CREATE: "/api/blog/create",
     GET_BY_SLUG: "/api/blog",
     GET_LIVE: "/api/blog/live",
+    GET_MY_POSTS: "/api/blog/my-posts",
+    GET_USER_POSTS: "/api/blog/user/@",
   },
   IMAGEKIT: {
     AUTH: "/api/imagekit/auth",
@@ -30,8 +34,22 @@ export const API_PATH = {
   BOOKMARK: {
     CREATE_LIST: "/api/bookmarks/create-list",
     GET_LISTS: "/api/bookmarks/get-lists",
+    GET_USER_LISTS: "/api/bookmarks/user/@",
     GET_LIST_DETAILS: "/api/bookmarks/get-list-details",
     ADD_ITEM: "/api/bookmarks/add-item",
     REMOVE_ITEM: "/api/bookmarks/remove-item",
+  },
+  FOLLOW: {
+    FOLLOW: "/api/users/follow",
+    IS_FOLLOWING: "/api/users/is-following",
+    GET_STATS: "/api/users/profile/",
+    GET_FOLLOWERS: "/api/users/followers/",
+    GET_FOLLOWING: "/api/users/following/",
+  },
+  COMMENTS: {
+    CREATE: "/api/comments/create",
+    GET_POST_COMMENTS: "/api/comments/post/",
+    GET_REPLIES: "/api/comments/replies/",
+    DELETE: "/api/comments/delete/",
   },
 };

@@ -54,7 +54,9 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalConfig._retry) {
+      console.log("[Axios] 401 detected, attempting refresh...");
       if (isRefreshing) {
+        console.log("[Axios] Refresh already in progress, queuing request");
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -68,6 +70,7 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
+        console.log("[Axios] Calling refresh endpoint...");
         const response = await axios.post(
           `${URL}${API_PATH.AUTH.REFRESH_TOKEN}`,
           {},
@@ -75,6 +78,7 @@ axiosInstance.interceptors.response.use(
             withCredentials: true,
           },
         );
+        console.log("[Axios] Refresh successful", response.data);
         const accessToken =
           response.data?.accessToken || response.data?.data?.accessToken;
 
@@ -86,6 +90,7 @@ axiosInstance.interceptors.response.use(
         originalConfig.headers["Authorization"] = `Bearer ${accessToken}`;
         return axiosInstance(originalConfig);
       } catch (refreshError: any) {
+        console.error("[Axios] Refresh failed:", refreshError);
         processQueue(refreshError, null);
         Tokenservice.removeUser();
         return Promise.reject(refreshError);

@@ -28,6 +28,12 @@ export class BookmarkController {
     return this.bookmarkService.getLists(req.user.id);
   }
 
+  // Public endpoint to get lists by username
+  @Get('user/@:username')
+  getUserLists(@Param('username') username: string) {
+    return this.bookmarkService.findPublicListsByUsername(username);
+  }
+
   @Get('get-list-details/:id')
   getListDetails(@Req() req, @Param('id') id: string) {
     return this.bookmarkService.getListDetails(req.user.id, id);

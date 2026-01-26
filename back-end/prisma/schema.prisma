@@ -23,8 +23,10 @@ model User {
   tokens      RefreshToken[]
   auditLogs   AuditLog[]
   posts       Post[]
+  comments    Comment[]
   bookmarkLists BookmarkList[]
-
+  followers       UserFollow[]       @relation("UserFollowers")
+  following       UserFollow[]       @relation("UserFollowing")
 }
 
 model UserSecurity {
@@ -106,6 +108,7 @@ model Post {
   userId        String
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookmarkItems BookmarkItem[]
+  comments      Comment[]
 
 
   @@index([userId])
@@ -116,7 +119,7 @@ model Post {
 }
 
 
-//===================Bookmark Model====================
+// ==================== INTERACTION MODELS ====================
 
 model BookmarkList {
   id        String   @id @default(uuid())
@@ -146,6 +149,41 @@ model BookmarkItem {
   @@index([postId])
 }
 
+model UserFollow {
+  id           String   @id @default(uuid())
+  followerId   String
+  followingId  String
+  createdAt    DateTime @default(now())
+
+  follower   User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following  User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId]) 
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String   @db.VarChar(1000)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted Boolean @default(false)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentId    String?
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[] @relation("CommentReplies")
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+}
 
 
 

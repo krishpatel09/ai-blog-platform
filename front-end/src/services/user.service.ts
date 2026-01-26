@@ -1,0 +1,41 @@
+import axiosInstance from "./api/axiosInstance";
+import { API_PATH } from "./api/Apipath";
+
+export interface PublicUser {
+  id: string;
+  username: string;
+  name: string;
+  avatar: string | null;
+  bio: string | null;
+  createdAt: string;
+}
+
+const UserService = {
+  getPublicProfile: async (username: string): Promise<PublicUser> => {
+    const response = await axiosInstance.get(
+      `${API_PATH.USERS.GET_PUBLIC_PROFILE}${username}`,
+    );
+    return response.data;
+  },
+
+  getPrivateProfile: async (): Promise<PublicUser> => {
+    const response = await axiosInstance.get(`${API_PATH.USERS.GET_PROFILE}`);
+    return response.data;
+  },
+
+  getFollowStats: async (username: string) => {
+    const response = await axiosInstance.get(
+      `${API_PATH.FOLLOW.GET_STATS}${username}/stats`,
+    );
+    return response.data;
+  },
+
+  getFollowing: async (userId: string) => {
+    const response = await axiosInstance.get(
+      `${API_PATH.FOLLOW.GET_FOLLOWING}${userId}`,
+    );
+    return response.data; // Returns UserFollow[] with 'following' relation
+  },
+};
+
+export default UserService;

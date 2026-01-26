@@ -28,6 +28,17 @@ export class BlogController {
     return this.blogService.findAllLive();
   }
 
+  @Get('my-posts')
+  getMyPosts(@Request() req) {
+    return this.blogService.findUserPosts(req.user.userId);
+  }
+
+  @Public()
+  @Get('user/@:username')
+  getUserPosts(@Param('username') username: string) {
+    return this.blogService.findPostsByUsername(username);
+  }
+
   @Public()
   @Get(':slug')
   findOne(@Param('slug') slug: string) {

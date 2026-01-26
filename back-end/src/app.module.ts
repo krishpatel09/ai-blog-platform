@@ -16,6 +16,8 @@ import { BlogModule } from './blog/blog.module';
 import { ImageKitModule } from './ImageKit/imagekit.module';
 import { AiModule } from './ai/ai.module';
 import { BookmarkModule } from './bookmark/bookmark.module';
+import { UserFollowModule } from './userFollow/userfollow.module';
+import { CommentModule } from './comments/comment.module';
 
 @Module({
   imports: [
@@ -32,6 +34,8 @@ import { BookmarkModule } from './bookmark/bookmark.module';
     ImageKitModule,
     AiModule,
     BookmarkModule,
+    UserFollowModule,
+    CommentModule,
   ],
   controllers: [AppController],
   providers: [

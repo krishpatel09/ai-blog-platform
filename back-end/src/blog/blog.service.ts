@@ -23,9 +23,9 @@ export class BlogService {
       throw new BadRequestException('Failed to generate unique slug');
     }
     console.log('slug', slug);
-    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' = 'DRAFT';
 
-    const finalPublishDate = publishedAt ? new Date(publishedAt) : null;
+    const finalPublishDate = publishedAt ? new Date(publishedAt) : new Date();
+    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' = 'PUBLISHED';
 
     try {
       const post = await this.prisma.post.create({
@@ -79,6 +79,27 @@ export class BlogService {
     return this.prisma.post.findMany({
       where: { userId },
       orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findPostsByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+    });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return this.prisma.post.findMany({
+      where: {
+        userId: user.id,
+        status: 'PUBLISHED',
+      },
+      orderBy: { publishedAt: 'desc' },
+      include: {
+        user: { select: { name: true, avatar: true, username: true } },
+      },
     });
   }
 

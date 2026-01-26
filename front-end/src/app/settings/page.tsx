@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -127,10 +126,7 @@ export default function SettingsPage() {
   const [customDomain, setCustomDomain] = useState("None");
 
   return (
-    <DashboardLayout
-      showRightSidebar={false}
-      contentClassName="max-w-[1080px] mx-auto px-4 lg:px-8"
-    >
+    <div className="max-w-[1080px] mx-auto px-4 lg:px-8">
       <div className="flex flex-col lg:flex-row">
         {/* Left Column - Main Settings */}
         <div className="flex-1 min-w-0 pr-16">
@@ -357,94 +353,7 @@ export default function SettingsPage() {
             </TabsContent>
           </Tabs>
         </div>
-
-        {/* Vertical Separator */}
-        <div className="hidden lg:block w-px bg-gray-200 shrink-0 h-auto self-stretch" />
-
-        {/* Right Column - Custom Sidebar for Settings */}
-        <div className="hidden lg:block w-[300px] shrink-0 pt-20 pl-16">
-          <div className="sticky top-32">
-            <h3 className="font-bold text-gray-900 mb-4">
-              Suggested help articles
-            </h3>
-            <ul className="space-y-3 mb-10">
-              <li>
-                <a
-                  href="#"
-                  className="text-[15px] text-gray-600 hover:text-gray-900"
-                >
-                  Sign in or sign up to Medium
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-[15px] text-gray-600 hover:text-gray-900"
-                >
-                  Your profile page
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-[15px] text-gray-600 hover:text-gray-900"
-                >
-                  Writing and publishing your first story
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-[15px] text-gray-600 hover:text-gray-900"
-                >
-                  About Medium's distribution system
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-[15px] text-gray-600 hover:text-gray-900"
-                >
-                  Get started with the Partner Program
-                </a>
-              </li>
-            </ul>
-
-            <div className="flex flex-wrap gap-x-3 gap-y-2 text-[11px] text-gray-500">
-              <a href="#" className="hover:underline">
-                Help
-              </a>
-              <a href="#" className="hover:underline">
-                Status
-              </a>
-              <a href="#" className="hover:underline">
-                About
-              </a>
-              <a href="#" className="hover:underline">
-                Careers
-              </a>
-              <a href="#" className="hover:underline">
-                Press
-              </a>
-              <a href="#" className="hover:underline">
-                Blog
-              </a>
-              <a href="#" className="hover:underline">
-                Privacy
-              </a>
-              <a href="#" className="hover:underline">
-                Terms
-              </a>
-              <a href="#" className="hover:underline">
-                Text to speech
-              </a>
-              <a href="#" className="hover:underline">
-                Teams
-              </a>
-            </div>
-          </div>
-        </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }

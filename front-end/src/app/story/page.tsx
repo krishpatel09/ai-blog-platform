@@ -13,6 +13,7 @@ const drafts: Blog[] = [
   {
     id: "d1",
     title: "hello world",
+    slug: "hello-world",
     excerpt: "1 min read (2 words) · Updated 1h ago", // Temporarily using excerpt for meta to match exact look easily
     author: { id: "1", name: "You", username: "you", avatar: "" },
     tags: [],
@@ -25,6 +26,7 @@ const drafts: Blog[] = [
     id: "d2",
     title:
       "How Artificial Intelligence Is Making Content Creation Easy for Everyone",
+    slug: "artificial-intelligence-content-creation",
     excerpt: "1 min read (171 words) · Updated 6d ago",
     author: { id: "1", name: "You", username: "you", avatar: "" },
     tags: [],
@@ -39,6 +41,7 @@ const published: Blog[] = [
   {
     id: "p1",
     title: "My Journey into Web Development",
+    slug: "my-journey-into-web-development",
     excerpt: "7 min read (1500 words) · Published 5d ago",
     coverImage: "https://picsum.photos/seed/20/400/300", // Example with image
     author: { id: "1", name: "You", username: "you", avatar: "" },
@@ -55,77 +58,73 @@ export default function StoryPage() {
   const [activeTab, setActiveTab] = useState("drafts");
 
   return (
-    <DashboardLayout showRightSidebar={false} contentClassName="max-w-[1000px]">
-      <div className="max-w-[1000px] mx-auto px-6 lg:px-0">
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-10 pt-4">
-          <h1 className="text-5xl font-bold text-gray-900 tracking-tight">
-            Stories
-          </h1>
-          <div className="flex gap-4">
-            <Button
-              variant="outline"
-              className="rounded-full border-black text-black hover:bg-gray-50 px-6"
-            >
-              Import a story
+    <div className="max-w-[1000px] mx-auto px-6 lg:px-0">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-10 pt-4">
+        <h1 className="text-5xl font-bold text-gray-900 tracking-tight">
+          Stories
+        </h1>
+        <div className="flex gap-4">
+          <Button
+            variant="outline"
+            className="rounded-full border-black text-black hover:bg-gray-50 px-6"
+          >
+            Import a story
+          </Button>
+          <Link href="/write">
+            <Button className="rounded-full bg-green-700 hover:bg-green-800 px-6 text-white hidden">
+              {" "}
+              {/* Hidden as per image, but kept code for ref */}
+              Write Story
             </Button>
-            <Link href="/write">
-              <Button className="rounded-full bg-green-700 hover:bg-green-800 px-6 text-white hidden">
-                {" "}
-                {/* Hidden as per image, but kept code for ref */}
-                Write Story
-              </Button>
-            </Link>
-          </div>
-        </div>
-
-        {/* Tabs */}
-        <div className="flex items-center gap-8 border-b border-gray-200 mb-8 overflow-x-auto">
-          {[
-            { id: "drafts", label: `Drafts ${drafts.length}` },
-            { id: "scheduled", label: "Scheduled" },
-            { id: "published", label: `Published ${published.length}` },
-            { id: "unlisted", label: "Unlisted" },
-            { id: "submissions", label: "Submissions" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`pb-4 text-sm whitespace-nowrap transition-all relative ${
-                activeTab === tab.id
-                  ? 'text-black font-medium after:absolute after:bottom-0 after:left-0 after:w-full after:h-px after:bg-black after:content-[""]'
-                  : "text-gray-500 hover:text-gray-800"
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Filters Header (Visual only mainly) */}
-        {/* Only check if we have items to show headers? Image shows them. */}
-        <div className="hidden md:flex items-center text-xs font-medium text-gray-500 border-b border-gray-100 pb-2 mb-4">
-          {/* Using grid to align somewhat with the list items roughly */}
-          <div className="w-[60%]">Latest</div>
-          <div className="w-[20%]">Publication</div>
-          <div className="w-[20%]">Status</div>
-        </div>
-
-        {/* List Content */}
-        <div className="space-y-0">
-          {activeTab === "drafts" &&
-            drafts.map((story) => <StoryItem key={story.id} story={story} />)}
-          {activeTab === "published" &&
-            published.map((story) => (
-              <StoryItem key={story.id} story={story} />
-            ))}
-          {/* Empty states for others */}
-          {activeTab !== "drafts" && activeTab !== "published" && (
-            <div className="py-10 text-gray-500 text-sm">No stories found.</div>
-          )}
+          </Link>
         </div>
       </div>
-    </DashboardLayout>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-8 border-b border-gray-200 mb-8 overflow-x-auto">
+        {[
+          { id: "drafts", label: `Drafts ${drafts.length}` },
+          { id: "scheduled", label: "Scheduled" },
+          { id: "published", label: `Published ${published.length}` },
+          { id: "unlisted", label: "Unlisted" },
+          { id: "submissions", label: "Submissions" },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`pb-4 text-sm whitespace-nowrap transition-all relative ${
+              activeTab === tab.id
+                ? 'text-black font-medium after:absolute after:bottom-0 after:left-0 after:w-full after:h-px after:bg-black after:content-[""]'
+                : "text-gray-500 hover:text-gray-800"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Filters Header (Visual only mainly) */}
+      {/* Only check if we have items to show headers? Image shows them. */}
+      <div className="hidden md:flex items-center text-xs font-medium text-gray-500 border-b border-gray-100 pb-2 mb-4">
+        {/* Using grid to align somewhat with the list items roughly */}
+        <div className="w-[60%]">Latest</div>
+        <div className="w-[20%]">Publication</div>
+        <div className="w-[20%]">Status</div>
+      </div>
+
+      {/* List Content */}
+      <div className="space-y-0">
+        {activeTab === "drafts" &&
+          drafts.map((story) => <StoryItem key={story.id} story={story} />)}
+        {activeTab === "published" &&
+          published.map((story) => <StoryItem key={story.id} story={story} />)}
+        {/* Empty states for others */}
+        {activeTab !== "drafts" && activeTab !== "published" && (
+          <div className="py-10 text-gray-500 text-sm">No stories found.</div>
+        )}
+      </div>
+    </div>
   );
 }
 

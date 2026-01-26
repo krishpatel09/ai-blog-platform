@@ -222,39 +222,48 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
   return (
     <div className="group border-b border-gray-200 last:border-0 pl-1">
-      <Link
-        href={`/@${blog.author.username}/${blog.slug}`}
-        className="flex flex-col md:flex-row gap-8 py-8 cursor-pointer"
-      >
+      <div className="flex flex-col md:flex-row gap-8 py-8">
         {/* Content Section - Left */}
         <div className="flex-1 flex flex-col justify-between">
           {/* Author Info */}
           <div className="flex items-center gap-2 mb-3">
-            <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden shadow-sm">
-              {blog.author.avatar ? (
-                <Image
-                  src={blog.author.avatar!}
-                  alt={blog.author.name}
-                  fill
-                  className="object-cover"
-                />
-              ) : (
-                blog.author.name.charAt(0).toUpperCase()
-              )}
-            </div>
-            <span className="text-sm font-medium text-gray-900">
-              {blog.author.name}
-            </span>
+            <Link
+              href={`/@${blog.author.username}`}
+              className="flex items-center gap-2 group/author z-10 relative w-fit"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden shadow-sm">
+                {blog.author.avatar ? (
+                  <Image
+                    src={blog.author.avatar!}
+                    alt={blog.author.name}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  blog.author.name.charAt(0).toUpperCase()
+                )}
+              </div>
+              <span className="text-sm font-medium text-gray-900 group-hover/author:underline">
+                {blog.author.name}
+              </span>
+            </Link>
           </div>
 
-          {/* Title */}
-          <h2 className="text-xl md:text-[22px] font-bold text-gray-900 group-hover:text-black line-clamp-2 mb-2 leading-tight tracking-tight">
-            {blog.title}
-          </h2>
-          {/* Excerpt */}
-          <p className="text-gray-600 line-clamp-2 mb-4 text-sm md:text-base leading-relaxed font-serif">
-            {previewText}
-          </p>
+          {/* Title & Excerpt - Main Link */}
+          <Link
+            href={`/@${blog.author.username}/${blog.slug}`}
+            className="cursor-pointer block group/post"
+          >
+            {/* Title */}
+            <h2 className="text-xl md:text-[22px] font-bold text-gray-900 group-hover/post:text-gray-600 line-clamp-2 mb-2 leading-tight tracking-tight transition-colors">
+              {blog.title}
+            </h2>
+            {/* Excerpt */}
+            <p className="text-gray-600 line-clamp-2 mb-4 text-sm md:text-base leading-relaxed font-serif">
+              {previewText}
+            </p>
+          </Link>
 
           {/* Meta Info */}
           <div className="flex items-center justify-between mt-auto">
@@ -293,16 +302,6 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
             {/* Right Side: Actions */}
             <div className="flex items-center gap-2">
-              {/* <ActionTooltip content="Show less like this">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-gray-400  hover:text-gray-900 hover:bg-transparent"
-                  onClick={handleDismiss}
-                >
-                  <Minus size={20} className="rounded-full border" />
-                </Button>
-              </ActionTooltip> */}
               <DropdownMenu
                 open={isBookmarkOpen}
                 onOpenChange={setIsBookmarkOpen}
@@ -454,17 +453,20 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
         {/* Image Section - Right */}
         {blog.coverImage && (
-          <div className="w-full md:w-40 lg:w-48 h-40 md:h-40 shrink-0 rounded-2xl overflow-hidden bg-gray-100">
+          <Link
+            href={`/@${blog.author.username}/${blog.slug}`}
+            className="w-full md:w-40 lg:w-48 h-40 md:h-40 shrink-0 rounded-2xl overflow-hidden bg-gray-100 cursor-pointer block"
+          >
             <Image
               src={blog.coverImage}
               alt={blog.title}
               width={200}
               height={160}
-              className="w-full h-full object-cover transition-transform duration-300"
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             />
-          </div>
+          </Link>
         )}
-      </Link>
+      </div>
     </div>
   );
 }

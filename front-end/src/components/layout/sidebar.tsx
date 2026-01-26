@@ -19,7 +19,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
   const menu = [
     { name: "Home", icon: Home, href: "/" },
     { name: "Library", icon: Bookmark, href: "/library" },
-    { name: "Profile", icon: User, href: `/${user?.username}` },
+    { name: "Profile", icon: User, href: `/@${user?.username}` },
     { name: "Stories", icon: FileText, href: "/story" },
     { name: "Stats", icon: BarChart2, href: "/monitaring" },
   ];

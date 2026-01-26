@@ -88,16 +88,16 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
             <DropdownMenu modal={false}>
               <DropdownMenuTrigger asChild>
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-pink-700 text-white flex items-center justify-center text-sm font-medium cursor-pointer hover:shadow-lg transition-shadow">
-                  {user.image ? (
+                  {user.avatar ? (
                     <Image
-                      src={user.image}
-                      alt={user.name || "User"}
+                      src={user.avatar}
+                      alt={user.avatar || "User"}
                       width={32}
                       height={32}
                       className="object-cover w-full h-full"
                     />
                   ) : (
-                    <span>{user.name?.[0]?.toUpperCase() || "U"}</span>
+                    <span>{user.name?.[0]?.toUpperCase() || "k"}</span>
                   )}
                 </div>
               </DropdownMenuTrigger>
@@ -108,9 +108,9 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
                 {/* Profile Header */}
                 <div className="px-6 py-4 flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full overflow-hidden bg-pink-700 text-white flex items-center justify-center text-lg font-medium shrink-0">
-                    {user.image ? (
+                    {user.avatar ? (
                       <Image
-                        src={user.image}
+                        src={user.avatar}
                         alt={user.name || "User"}
                         width={40}
                         height={40}
@@ -125,7 +125,7 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
                       {user.name}
                     </span>
                     <Link
-                      href={`/${user.username || "profile"}`}
+                      href={`/@${user.username}`}
                       className="text-sm text-gray-500 hover:text-gray-900"
                     >
                       View profile
@@ -240,7 +240,7 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
           // GUEST VIEW
           <div className="flex items-center gap-4">
             <Link
-              href="/new-blog"
+              href="/sign-in"
               className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors mr-2"
             >
               <Edit size={20} />{" "}

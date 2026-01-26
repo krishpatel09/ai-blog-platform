@@ -30,6 +30,13 @@ class BookmarkService {
     return response.data;
   }
 
+  async getUserLists(username: string): Promise<BookmarkList[]> {
+    const response = await axiosInstance.get(
+      `${API_PATH.BOOKMARK.GET_USER_LISTS}${username}`,
+    );
+    return response.data;
+  }
+
   async getListDetails(id: string): Promise<BookmarkList> {
     const response = await axiosInstance.get(
       `${API_PATH.BOOKMARK.GET_LIST_DETAILS}/${id}`,

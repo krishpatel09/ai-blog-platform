@@ -11,7 +11,7 @@ import Link from "next/link";
 import Header from "@/components/layout/hearder";
 import BlogInteractionBar from "@/components/shared/BlogInteractionBar";
 import { useAuth } from "@/context/AuthContext";
-import DashboardLayout from "@/components/layout/DashboardLayout";
+import FollowUserButton from "@/components/shared/FollowUserButton";
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -104,14 +104,14 @@ export default function BlogDetailPage() {
 
   const BlogContent = () => (
     <>
-      <div className="mb-8 md:mb-12 text-center">
+      <div className="mb-8 md:mb-12 text-left">
         {/* Title */}
         <h1 className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-900 tracking-tight mb-8 leading-tight">
           {blog.title}
         </h1>
 
         {/* Author & Meta */}
-        <div className="flex items-center justify-center gap-6 text-gray-600 text-sm md:text-base">
+        <div className="flex items-center justify-start gap-6 text-gray-600 text-sm md:text-base">
           <div className="flex items-center gap-2">
             {blog.author.avatar ? (
               <Image
@@ -131,19 +131,19 @@ export default function BlogDetailPage() {
             <span className="font-medium text-gray-900">
               {blog.author.name}
             </span>
+            <FollowUserButton authorId={blog.author.id} />
           </div>
+
+          <span className="flex items-center gap-1 text-gray-500">
+            {blog.readTime} min read
+          </span>
           <span>·</span>
-          <span>
+          <span className="text-gray-500">
             {new Date(blog.publishedAt).toLocaleDateString("en-US", {
               year: "numeric",
               month: "short",
               day: "numeric",
             })}
-          </span>
-          <span>·</span>
-          <span className="flex items-center gap-1">
-            <Clock size={16} />
-            {blog.readTime} min read
           </span>
         </div>
       </div>
@@ -178,11 +178,11 @@ export default function BlogDetailPage() {
   // Authenticated Layout
   if (user) {
     return (
-      <DashboardLayout showRightSidebar={false} contentClassName="max-w-none">
+      <div className="max-w-none">
         <div className="mx-auto px-4 py-8 md:py-12 max-w-4xl">
           <BlogContent />
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 

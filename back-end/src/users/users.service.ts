@@ -22,7 +22,7 @@ export class UsersService {
     private emailService: EmailService,
   ) {}
 
-  // Get user profile
+  //Get user profile
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -52,6 +52,27 @@ export class UsersService {
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
+  }
+
+  // Get public profile by username
+  async getPublicProfileByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        avatar: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   //Update profile
