@@ -8,6 +8,7 @@ export interface PublicUser {
   avatar: string | null;
   bio: string | null;
   createdAt: string;
+  isOwner?: boolean;
 }
 
 const UserService = {
@@ -34,7 +35,7 @@ const UserService = {
     const response = await axiosInstance.get(
       `${API_PATH.FOLLOW.GET_FOLLOWING}${userId}`,
     );
-    return response.data; // Returns UserFollow[] with 'following' relation
+    return response.data;
   },
 };
 

@@ -10,13 +10,6 @@
 
 # tommorow task
 
-home api public
-list api public
-user profile api public (user name wise)
-aboute anythings
-
-# follower and following api implement and how many button show
-
--main blog in view following button
--user profile in
--follw in in three oprion, email notifincation on,email notification off,unfollow
+http://localhost:3000/library
+http://localhost:3000/library/list/{listname}
+http://localhost:3000/library/

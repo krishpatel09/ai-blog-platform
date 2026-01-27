@@ -448,7 +448,7 @@ export function CommentsSidebar({
                               disabled={!replyContent.trim() || isSubmitting}
                               onClick={() => handleReply(comment.id)}
                             >
-                              {isSubmitting ? "..." : "Respond"}
+                              {isSubmitting ? "Responding..." : "Respond"}
                             </Button>
                           </div>
                         </div>

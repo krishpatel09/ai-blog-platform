@@ -4,12 +4,29 @@ import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 
+import { cn } from "@/lib/utils";
+
 interface LibraryListCardProps {
   list: BookmarkList;
+  author?: {
+    name: string;
+    avatar?: string | null;
+    image?: string | null;
+    username?: string;
+  };
+  className?: string;
 }
 
-export default function LibraryListCard({ list }: LibraryListCardProps) {
+export default function LibraryListCard({
+  list,
+  author,
+  className,
+}: LibraryListCardProps) {
   const { user } = useAuth();
+
+  const displayUser = author || user;
+  const userAvatar = displayUser?.avatar || displayUser?.image;
+  const userName = displayUser?.name || "User";
 
   // Get up to 3 cover images from the list items for the preview
   const coverImages = list.items
@@ -18,28 +35,33 @@ export default function LibraryListCard({ list }: LibraryListCardProps) {
     .slice(0, 3);
 
   return (
-    <div className="group flex overflow-hidden  border border-gray-200 bg-white transition-all  cursor-pointer h-[160px]">
+    <div
+      className={cn(
+        "group flex overflow-hidden border border-gray-200 bg-white transition-all cursor-pointer h-[160px]",
+        className,
+      )}
+    >
       {/* Left Content */}
       <div className="flex-1 p-2 flex flex-col justify-between">
         <div>
           <div className="flex items-center gap-2 mb-4">
             <div className="w-6 h-6 rounded-full overflow-hidden bg-gray-200">
-              {user?.image ? (
+              {userAvatar ? (
                 <Image
-                  src={user.image}
-                  alt={user.name || "User"}
+                  src={userAvatar}
+                  alt={userName}
                   width={24}
                   height={24}
                   className="w-full h-full object-cover"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-green-600 text-[10px] text-white font-bold">
-                  {(user?.name || "U")[0]?.toUpperCase()}
+                  {(userName || "U")[0]?.toUpperCase()}
                 </div>
               )}
             </div>
             <span className="text-sm font-medium text-gray-900">
-              {user?.name || "User"}
+              {userName}
             </span>
           </div>
 
@@ -63,7 +85,11 @@ export default function LibraryListCard({ list }: LibraryListCardProps) {
               <div
                 key={idx}
                 className={`relative h-full border-l-2 border-white first:border-l-0 overflow-hidden bg-gray-100 ${
-                  idx === 0 ? "w-[45%]" : idx === 1 ? "w-[30%]" : "w-[25%]"
+                  coverImages.length === 1
+                    ? "w-full"
+                    : coverImages.length === 2
+                      ? "w-1/2"
+                      : "w-1/3"
                 }`}
               >
                 <Image
@@ -74,23 +100,6 @@ export default function LibraryListCard({ list }: LibraryListCardProps) {
                 />
               </div>
             ))}
-            {/* Fill remaining space if less than 3 images */}
-            {[...Array(3 - coverImages.length)].map((_, idx) => {
-              // Calculate effective index (current mapped index + existing images count)
-              const effectiveIdx = coverImages.length + idx;
-              return (
-                <div
-                  key={`empty-${idx}`}
-                  className={`relative h-full border-l-2 border-white bg-gray-50 ${
-                    effectiveIdx === 0
-                      ? "w-[45%]"
-                      : effectiveIdx === 1
-                        ? "w-[30%]"
-                        : "w-[25%]"
-                  }`}
-                />
-              );
-            })}
           </div>
         ) : (
           <div className="w-full h-full bg-gray-100 flex items-center justify-center">
