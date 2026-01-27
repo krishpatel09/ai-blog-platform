@@ -11,6 +11,7 @@ import {
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from './guards/optional-jwt-auth.guard';
 
 @Controller('comments')
 export class CommentController {
@@ -23,14 +24,25 @@ export class CommentController {
     return this.commentService.createComment(userId, createCommentDto);
   }
 
-  @Get('post/:postId')
-  async getPostComments(@Param('postId') postId: string) {
-    return this.commentService.getPostComments(postId);
+  @UseGuards(JwtAuthGuard)
+  @Post('like/:id')
+  async toggleLike(@Req() req, @Param('id') id: string) {
+    const userId = req.user.id;
+    return this.commentService.toggleCommentLike(userId, id);
   }
 
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('post/:postId')
+  async getPostComments(@Param('postId') postId: string, @Req() req) {
+    const userId = req.user?.id;
+    return this.commentService.getPostComments(userId, postId);
+  }
+
+  @UseGuards(OptionalJwtAuthGuard)
   @Get('replies/:id')
-  async getReplies(@Param('id') commentId: string) {
-    return this.commentService.getReplies(commentId);
+  async getReplies(@Param('id') commentId: string, @Req() req) {
+    const userId = req.user?.id;
+    return this.commentService.getReplies(userId, commentId);
   }
 
   @UseGuards(JwtAuthGuard)

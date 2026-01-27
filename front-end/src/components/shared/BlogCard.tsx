@@ -268,9 +268,16 @@ export default function BlogCard({ blog }: BlogCardProps) {
           {/* Meta Info */}
           <div className="flex items-center justify-between mt-auto">
             {/* Left Side: Date, Likes, Comments */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium">
-                <Calendar size={16} className="text-gray-400" />
+            <Link
+              href={`/@${blog.author.username}/${blog.slug}`}
+              className="flex items-center gap-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center gap-1.5 text-xs text-gray-500 font-medium hover:text-gray-900 transition-colors">
+                <Calendar
+                  size={16}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                />
                 <span>
                   {new Date(blog.publishedAt).toLocaleDateString("en-US", {
                     month: "short",
@@ -280,25 +287,25 @@ export default function BlogCard({ blog }: BlogCardProps) {
               </div>
 
               <ActionTooltip content={`${blog.likeCount || 0} Likes`}>
-                <div
-                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors cursor-default"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <ThumbsUp size={16} className="text-gray-400" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                  <ThumbsUp
+                    size={16}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  />
                   <span>{blog.likeCount || 0}</span>
                 </div>
               </ActionTooltip>
 
               <ActionTooltip content={`${blog.commentCount || 0} responses`}>
-                <div
-                  className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors cursor-default"
-                  onClick={(e) => e.preventDefault()}
-                >
-                  <MessageSquareText size={16} className="text-gray-400" />
+                <div className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors">
+                  <MessageSquareText
+                    size={16}
+                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                  />
                   <span>{blog.commentCount || 0}</span>
                 </div>
               </ActionTooltip>
-            </div>
+            </Link>
 
             {/* Right Side: Actions */}
             <div className="flex items-center gap-2">

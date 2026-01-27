@@ -1,5 +1,5 @@
-import axiosInstance from "./axiosInstance";
-import { API_PATH } from "./Apipath";
+import axiosInstance from "./api/axiosInstance";
+import { API_PATH } from "./api/Apipath";
 
 export interface Comment {
   id: string;
@@ -19,7 +19,9 @@ export interface Comment {
     replies: number;
     likes: number; // Assuming we might have likes later
   };
+  likes?: any[]; // To track if current user liked it
   replies?: Comment[]; // For nested structure if returned
+  likeCount?: number; // Backend might return this directly updated
 }
 
 export interface CreateCommentPayload {
@@ -48,6 +50,13 @@ export const CommentService = {
   getReplies: async (commentId: string): Promise<Comment[]> => {
     const response = await axiosInstance.get(
       `${API_PATH.COMMENTS.GET_REPLIES}${commentId}`,
+    );
+    return response.data;
+  },
+
+  toggleLike: async (commentId: string): Promise<Comment> => {
+    const response = await axiosInstance.post(
+      `${API_PATH.COMMENTS.LIKE}${commentId}`,
     );
     return response.data;
   },

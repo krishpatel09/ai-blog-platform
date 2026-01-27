@@ -51,5 +51,6 @@ export const API_PATH = {
     GET_POST_COMMENTS: "/api/comments/post/",
     GET_REPLIES: "/api/comments/replies/",
     DELETE: "/api/comments/delete/",
+    LIKE: "/api/comments/like/",
   },
 };

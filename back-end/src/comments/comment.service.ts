@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Injectable()
 export class CommentService {
@@ -17,7 +18,6 @@ export class CommentService {
     const { postId, content, parentId } = createCommentDto;
 
     return await this.prisma.$transaction(async (tx) => {
-      // 1. Verify Post Exists
       const post = await tx.post.findUnique({
         where: { id: postId },
       });
@@ -44,7 +44,6 @@ export class CommentService {
         }
       }
 
-      // 3. Create the Comment
       const comment = await tx.comment.create({
         data: {
           content,
@@ -68,7 +67,6 @@ export class CommentService {
         `[CommentService] User ${userId} commented on Post ${postId}. Comment ID: ${comment.id}`,
       );
 
-      // 4. Increment Post Comment Count
       await tx.post.update({
         where: { id: postId },
         data: {
@@ -78,33 +76,47 @@ export class CommentService {
         },
       });
 
-      // 5. Create Audit Log
-      await tx.auditLog.create({
-        data: {
-          userId,
-          action: 'COMMENT_CREATE',
-          details: {
-            commentId: comment.id,
-            postId,
-            parentId: parentId || null,
-          },
-        },
-      });
-
       return comment;
     });
   }
+  async toggleCommentLike(userId: string, commentId: string) {
+    return await this.prisma.$transaction(async (tx) => {
+      const existingLike = await tx.commentLike.findUnique({
+        where: {
+          userId_commentId: { userId, commentId },
+        },
+      });
 
-  /**
-   * Get top-level comments for a post
-   * - Includes user details
-   * - Includes reply count
-   */
-  async getPostComments(postId: string) {
+      if (existingLike) {
+        await tx.commentLike.delete({
+          where: {
+            userId_commentId: { userId, commentId },
+          },
+        });
+        return tx.comment.update({
+          where: { id: commentId },
+          data: { likeCount: { decrement: 1 } },
+        });
+      } else {
+        await tx.commentLike.create({
+          data: {
+            userId,
+            commentId,
+          },
+        });
+        return tx.comment.update({
+          where: { id: commentId },
+          data: { likeCount: { increment: 1 } },
+        });
+      }
+    });
+  }
+
+  async getPostComments(userId: string, postId: string) {
     const comments = await this.prisma.comment.findMany({
       where: {
         postId,
-        parentId: null, // Only top-level comments
+        parentId: null,
       },
       include: {
         user: {
@@ -120,6 +132,7 @@ export class CommentService {
             replies: true,
           },
         },
+        likes: userId ? { where: { userId: userId }, take: 1 } : false,
       },
       orderBy: {
         createdAt: 'desc',
@@ -129,12 +142,7 @@ export class CommentService {
     return comments;
   }
 
-  /**
-   * Get replies for a specific comment
-   * - Includes user details
-   * - Includes nested reply count (if we support deep nesting fetch later, but for now strict direct children)
-   */
-  async getReplies(commentId: string) {
+  async getReplies(userId: string, commentId: string) {
     const replies = await this.prisma.comment.findMany({
       where: {
         parentId: commentId,
@@ -153,27 +161,23 @@ export class CommentService {
             replies: true,
           },
         },
+        likes: userId ? { where: { userId: userId }, take: 1 } : false,
       },
       orderBy: {
-        createdAt: 'asc', // Replies usually chronological
+        createdAt: 'asc',
       },
     });
 
     return replies;
   }
 
-  /**
-   * Delete a comment
-   * - Only owner can delete (Controller should enforce current user match)
-   * - Decrement post comment count
-   */
   async deleteComment(userId: string, commentId: string) {
     return await this.prisma.$transaction(async (tx) => {
       const comment = await tx.comment.findUnique({
         where: { id: commentId },
         include: {
           _count: {
-            select: { replies: true }, // This defaults to direct replies only
+            select: { replies: true },
           },
         },
       });
@@ -190,8 +194,6 @@ export class CommentService {
         where: { id: commentId },
       });
 
-      // Decrease count by 1 (The main comment) - *Logic simplification*
-      // Real-world: Should count children.
       await tx.post.update({
         where: { id: comment.postId },
         data: {

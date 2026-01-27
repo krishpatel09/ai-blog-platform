@@ -25,6 +25,7 @@ model User {
   posts       Post[]
   comments    Comment[]
   bookmarkLists BookmarkList[]
+  CommentLikes CommentLike[]
   followers       UserFollow[]       @relation("UserFollowers")
   following       UserFollow[]       @relation("UserFollowing")
 }
@@ -172,19 +173,31 @@ model Comment {
 
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
   postId      String
   post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
 
   parentId    String?
   parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies     Comment[] @relation("CommentReplies")
+  likes       CommentLike[]
+  likeCount   Int       @default(0)
 
   @@index([postId])
   @@index([userId])
   @@index([parentId])
 }
 
+model CommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId]) 
+  @@index([commentId])
+}
 
 
 

@@ -52,22 +52,15 @@ export default function UserProfilePage() {
         setError("");
         const cleanUsername = username.replace(/^(@|%40)/, "");
 
-        // 1. Fetch User Profile
         const user = await UserService.getPublicProfile(cleanUsername);
         setProfileUser(user);
 
-        // 2. Fetch Posts (Default Tab)
         const userPosts = await BlogService.getPostsByUsername(cleanUsername);
         setPosts(userPosts);
 
-        // 3. Fetch Follow Stats
         const stats = await UserService.getFollowStats(cleanUsername);
         setFollowStats(stats);
 
-        // 4. Fetch Following List (for sidebar)
-        // Note: We need userId for this, which we get from 'user' object above.
-        // 'user' might be PublicUser, we need to ensure it has ID or we use username if API supports.
-        // UserService.getFollowing expects userId. PublicUser has id.
         if (user && user.id) {
           const following = await UserService.getFollowing(user.id);
           setFollowingList(following);

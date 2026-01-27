@@ -64,6 +64,7 @@ export default function BlogDetailPage() {
           isPublished: data.status === "PUBLISHED",
           isDraft: data.status === "DRAFT",
           likeCount: data.likeCount || 0,
+          commentCount: data.commentCount || 0,
         };
 
         setBlog(mappedBlog);
