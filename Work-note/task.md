@@ -13,3 +13,5 @@
 http://localhost:3000/library
 http://localhost:3000/library/list/{listname}
 http://localhost:3000/library/
+
+1.bookmark in list public in create this

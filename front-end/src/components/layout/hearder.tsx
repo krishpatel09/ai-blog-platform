@@ -5,6 +5,7 @@ import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
 import Tokenservice from "@/services/api/Tokenservice";
 import { useAuth } from "@/context/AuthContext";
+import { useClerk } from "@clerk/nextjs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
+import { useState } from "react";
 
 interface HeaderProps {
   isCollapsed: boolean;
@@ -23,15 +26,37 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
   const router = useRouter();
   const { user } = useAuth();
 
+  const { showSuccess, showError, showLoading, dismiss } = useToast();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  const { signOut } = useClerk();
+
   const handleLogout = async () => {
+    if (isLoggingOut) return;
+
+    setIsLoggingOut(true);
+    const toastId = showLoading("Signing out...");
+
     try {
       await axiosInstance.post(API_PATH.AUTH.LOGOUT);
+      await signOut();
+      Tokenservice.removeUser();
+
+      dismiss(toastId);
+      showSuccess("Signed out successfully");
+
+      router.replace("/sign-in");
+      window.location.reload();
     } catch (error) {
       console.error("Logout failed:", error);
-    } finally {
+      dismiss(toastId);
+      showError("Failed to sign out completely");
+
       Tokenservice.removeUser();
-      router.push("/sign-in"); // or "/"
-      window.location.reload(); // Ensure state clears
+      router.replace("/sign-in");
+      window.location.reload();
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -39,7 +64,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
     <header className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
       <div className="max-w-[1400px] mx-auto flex items-center justify-between h-16 px-4">
         <div className="flex items-center gap-4">
-          {/* Menu Toggle Icon - Only show if user is logged in */}
           {user && (
             <button
               onClick={onToggleCollapse}
@@ -90,8 +114,8 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
                 <div className="w-8 h-8 rounded-full overflow-hidden bg-pink-700 text-white flex items-center justify-center text-sm font-medium cursor-pointer hover:shadow-lg transition-shadow">
                   {user.avatar ? (
                     <Image
-                      src={user.avatar}
-                      alt={user.avatar || "User"}
+                      src={user?.avatar}
+                      alt={user?.name || "User"}
                       width={32}
                       height={32}
                       className="object-cover w-full h-full"
@@ -202,7 +226,7 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
                     onClick={handleLogout}
                     className="text-sm text-gray-700 hover:text-black block mb-1 w-full text-left"
                   >
-                    Sign out
+                    {isLoggingOut ? "Signing out..." : "Sign out"}
                   </button>
                   <span className="text-xs text-gray-500">{user.email}</span>
                 </div>

@@ -51,7 +51,6 @@ export default function UserProfilePage() {
         setLoading(true);
         setError("");
         const cleanUsername = username.replace(/^(@|%40)/, "");
-
         const user = await UserService.getPublicProfile(cleanUsername);
         setProfileUser(user);
 
@@ -131,16 +130,8 @@ export default function UserProfilePage() {
           {profileUser.name.charAt(0).toUpperCase()}
         </div>
       )}
-
-      {/* Name & Title */}
       <div>
         <h2 className="text-lg font-bold text-gray-900">{profileUser.name}</h2>
-        {followStats && (
-          <p className="text-gray-600 mt-1">
-            {followStats.followersCount} Followers ·{" "}
-            {followStats.followingCount} Following
-          </p>
-        )}
       </div>
 
       {/* Bio */}
@@ -153,17 +144,21 @@ export default function UserProfilePage() {
       {/* Edit / Follow Button */}
       <div className="mt-2">
         {isOwnProfile ? (
-          <Link
-            href="/settings"
-            className="text-green-600 text-sm hover:text-green-700 font-medium"
-          >
+          <Link href="/settings" className="text-black border border-black">
             Edit profile
           </Link>
-        ) : (
+        ) : authUser ? (
           <FollowUserButton
             authorId={profileUser.id}
-            className="bg-green-600 text-white hover:bg-green-700 border-none px-6"
+            className="text-black  border border-black"
           />
+        ) : (
+          <Link
+            href="/sign-in"
+            className="inline-flex items-center justify-center rounded-full border border-black bg-white  px-6 py-2 text-sm font-medium text-black transition-colors h-8"
+          >
+            Follow
+          </Link>
         )}
       </div>
 

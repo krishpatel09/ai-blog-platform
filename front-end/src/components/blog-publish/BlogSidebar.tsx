@@ -49,8 +49,8 @@ export default function BlogSidebar({
   validationErrors,
 }: BlogSidebarProps) {
   return (
-    <aside className="hidden lg:block w-80 shrink-0">
-      <div className="sticky top-20 text-balance space-y-6">
+    <aside className="hidden lg:block w-80 shrink-0 relative">
+      <div className="sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pr-2 custom-scrollbar text-balance space-y-6">
         {validationErrors && validationErrors.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 animate-in fade-in slide-in-from-top-4">
             <h3 className="text-red-800 font-semibold mb-2 flex items-center gap-2">

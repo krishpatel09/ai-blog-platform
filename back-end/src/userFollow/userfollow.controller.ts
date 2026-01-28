@@ -9,12 +9,12 @@ import {
 } from '@nestjs/common';
 import { UserFollowService } from './userfollow.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 @Controller('users')
 export class UserFollowController {
   constructor(private readonly followService: UserFollowService) {}
 
-  // Toggle Follow/Unfollow
   @UseGuards(JwtAuthGuard)
   @Post('follow/:id')
   async handleToggleFollow(@Param('id') targetId: string, @Req() req: any) {
@@ -31,19 +31,18 @@ export class UserFollowController {
     return this.followService.isFollowing(req.user.id, targetId);
   }
 
-  // Get Follow Stats
+  @Public()
   @Get('profile/:username/stats')
   async getFollowStats(@Param('username') username: string) {
     return this.followService.getFollowStats(username);
   }
-
-  // Get Followers
+  @Public()
   @Get('followers/:userId')
   async getFollowers(@Param('userId') userId: string) {
     return this.followService.getFollowers(userId);
   }
 
-  // Get Following
+  @Public()
   @Get('following/:userId')
   async getFollowing(@Param('userId') userId: string) {
     return this.followService.getFollowing(userId);
