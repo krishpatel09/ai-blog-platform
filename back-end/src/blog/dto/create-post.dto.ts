@@ -19,5 +19,9 @@ export class CreatePostDto {
 
   @IsString()
   @IsOptional()
-  publishedAt?: string; // ISO Date string
+  publishedAt?: string;
+
+  @IsString()
+  @IsOptional()
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
 }

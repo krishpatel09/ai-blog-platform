@@ -12,6 +12,7 @@ import { BookmarkService } from './bookmark.service';
 import { CreateBookmarkListDto } from './dto/create-list.dto';
 import { AddBookmarkItemDto } from './dto/add-item.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Public } from '../common/decorators/public.decorator';
 
 @Controller('bookmarks')
 @UseGuards(JwtAuthGuard)
@@ -29,6 +30,7 @@ export class BookmarkController {
   }
 
   // Public endpoint to get lists by username
+  @Public()
   @Get('user/@:username')
   getUserLists(@Param('username') username: string) {
     return this.bookmarkService.findPublicListsByUsername(username);

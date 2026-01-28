@@ -1,61 +1,73 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Blog } from "@/types/blog.types";
 import { MoreHorizontal } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-
-// Mock drafts and published stories
-const drafts: Blog[] = [
-  {
-    id: "d1",
-    title: "hello world",
-    slug: "hello-world",
-    excerpt: "1 min read (2 words) · Updated 1h ago", // Temporarily using excerpt for meta to match exact look easily
-    author: { id: "1", name: "You", username: "you", avatar: "" },
-    tags: [],
-    publishedAt: "2026-01-14",
-    readTime: 1,
-    isPublished: false,
-    isDraft: true,
-  },
-  {
-    id: "d2",
-    title:
-      "How Artificial Intelligence Is Making Content Creation Easy for Everyone",
-    slug: "artificial-intelligence-content-creation",
-    excerpt: "1 min read (171 words) · Updated 6d ago",
-    author: { id: "1", name: "You", username: "you", avatar: "" },
-    tags: [],
-    publishedAt: "2026-01-14",
-    readTime: 1,
-    isPublished: false,
-    isDraft: true,
-  },
-];
-
-const published: Blog[] = [
-  {
-    id: "p1",
-    title: "My Journey into Web Development",
-    slug: "my-journey-into-web-development",
-    excerpt: "7 min read (1500 words) · Published 5d ago",
-    coverImage: "https://picsum.photos/seed/20/400/300", // Example with image
-    author: { id: "1", name: "You", username: "you", avatar: "" },
-    tags: [],
-    publishedAt: "2026-01-10",
-    readTime: 7,
-    views: 542,
-    isPublished: true,
-    isDraft: false,
-  },
-];
+import StoriesService, { StoryStats } from "@/services/stories.service";
+import { useAuth } from "@/context/AuthContext";
 
 export default function StoryPage() {
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("drafts");
+  const [allStories, setAllStories] = useState<any[]>([]); // Store all fetched stories
+  const [displayedStories, setDisplayedStories] = useState<any[]>([]); // Store filtered stories
+  const [stats, setStats] = useState<StoryStats | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch All Data on Mount
+  useEffect(() => {
+    if (!user) return;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const [statsData, storiesResponse] = await Promise.all([
+          StoriesService.getStats(),
+          StoriesService.getStories("", 1, 100), // Fetch all (limit 100 for now)
+        ]);
+        setStats(statsData);
+        setAllStories(storiesResponse.data);
+      } catch (error) {
+        console.error("Failed to fetch data", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user]);
+
+  // Client-Side Filtering
+  useEffect(() => {
+    if (!allStories.length) {
+      setDisplayedStories([]);
+      return;
+    }
+
+    const now = new Date();
+    const filtered = allStories.filter((story) => {
+      const status = story.status;
+      const pubDate = story.publishedAt ? new Date(story.publishedAt) : null;
+
+      switch (activeTab) {
+        case "drafts":
+          return status === "DRAFT";
+        case "published":
+          return status === "PUBLISHED" && pubDate && pubDate <= now;
+        case "scheduled":
+          return status === "PUBLISHED" && pubDate && pubDate > now;
+        case "unlisted":
+          return status === "ARCHIVED";
+        case "submissions":
+          return false; // Not implemented
+        default:
+          return true;
+      }
+    });
+    setDisplayedStories(filtered);
+  }, [activeTab, allStories]);
 
   return (
     <div className="max-w-[1000px] mx-auto px-6 lg:px-0">
@@ -71,10 +83,8 @@ export default function StoryPage() {
           >
             Import a story
           </Button>
-          <Link href="/write">
+          <Link href="/new-blog">
             <Button className="rounded-full bg-green-700 hover:bg-green-800 px-6 text-white hidden">
-              {" "}
-              {/* Hidden as per image, but kept code for ref */}
               Write Story
             </Button>
           </Link>
@@ -84,10 +94,10 @@ export default function StoryPage() {
       {/* Tabs */}
       <div className="flex items-center gap-8 border-b border-gray-200 mb-8 overflow-x-auto">
         {[
-          { id: "drafts", label: `Drafts ${drafts.length}` },
-          { id: "scheduled", label: "Scheduled" },
-          { id: "published", label: `Published ${published.length}` },
-          { id: "unlisted", label: "Unlisted" },
+          { id: "drafts", label: `Drafts ${stats?.drafts || ""}` },
+          { id: "scheduled", label: `Scheduled ${stats?.scheduled || ""}` },
+          { id: "published", label: `Published ${stats?.published || ""}` },
+          { id: "unlisted", label: `Unlisted ${stats?.unlisted || ""}` },
           { id: "submissions", label: "Submissions" },
         ].map((tab) => (
           <button
@@ -104,23 +114,15 @@ export default function StoryPage() {
         ))}
       </div>
 
-      {/* Filters Header (Visual only mainly) */}
-      {/* Only check if we have items to show headers? Image shows them. */}
-      <div className="hidden md:flex items-center text-xs font-medium text-gray-500 border-b border-gray-100 pb-2 mb-4">
-        {/* Using grid to align somewhat with the list items roughly */}
-        <div className="w-[60%]">Latest</div>
-        <div className="w-[20%]">Publication</div>
-        <div className="w-[20%]">Status</div>
-      </div>
-
       {/* List Content */}
       <div className="space-y-0">
-        {activeTab === "drafts" &&
-          drafts.map((story) => <StoryItem key={story.id} story={story} />)}
-        {activeTab === "published" &&
-          published.map((story) => <StoryItem key={story.id} story={story} />)}
-        {/* Empty states for others */}
-        {activeTab !== "drafts" && activeTab !== "published" && (
+        {loading ? (
+          <div className="py-10 text-center">Loading...</div>
+        ) : displayedStories.length > 0 ? (
+          displayedStories.map((story) => (
+            <StoryItem key={story.id} story={story} />
+          ))
+        ) : (
           <div className="py-10 text-gray-500 text-sm">No stories found.</div>
         )}
       </div>
@@ -128,11 +130,27 @@ export default function StoryPage() {
   );
 }
 
-function StoryItem({ story }: { story: Blog }) {
+function StoryItem({ story }: { story: any }) {
+  // Safe accessor for optional fields
+  const isDraft = story.status === "DRAFT";
+  const dateStr = story.publishedAt || story.updatedAt;
+  const dateFormatted = dateStr
+    ? new Date(dateStr).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      })
+    : "";
+
   return (
     <div className="group py-5 border-b border-gray-100 last:border-0 flex items-start justify-between">
-      <div className="flex items-start gap-4 max-w-[70%]">
-        {/* Placeholder/Thumbnail */}
+      <Link
+        href={`/new-blog?id=${story.id}`}
+        className="flex items-start gap-4 max-w-[70%] w-full"
+      >
+        {/* Using Link to edit or view. For draft, usually /p/id/edit. Using /new-blog?id= for now or just generic link */}
+        {/* Wait, user didn't specify edit link. Assuming text is clickable or title is. I'll make the block clickable to edit if draft, view if published? */}
+        {/* Let's just make the title/content clickable to standard route for now, or keep div structure if no link requested. */}
+        {/* Original code didn't have link. I will add basic display logic. */}
         <div className="w-14 h-10 bg-gray-100 shrink-0 flex items-center justify-center text-gray-400 overflow-hidden rounded-sm">
           {story.coverImage ? (
             <Image
@@ -160,12 +178,15 @@ function StoryItem({ story }: { story: Blog }) {
         </div>
 
         <div className="flex flex-col">
-          <h3 className="text-base font-bold text-gray-900 leading-tight mb-1">
-            {story.title}
+          <h3 className="text-base font-bold text-gray-900 leading-tight mb-1 group-hover:underline">
+            {story.title || "Untitled Story"}
           </h3>
-          <p className="text-xs text-gray-500">{story.excerpt}</p>
+          <p className="text-xs text-gray-500">
+            {isDraft ? "Draft" : "Published"} · {story.readTime || 1} min read ·{" "}
+            {dateFormatted}
+          </p>
         </div>
-      </div>
+      </Link>
 
       <div className="flex items-center gap-2 relative">
         <button className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100">

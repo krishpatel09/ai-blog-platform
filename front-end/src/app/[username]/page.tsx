@@ -47,34 +47,53 @@ export default function UserProfilePage() {
   // Fetch Profile & Posts (Default Home View)
   useEffect(() => {
     const fetchProfileAndPosts = async () => {
+      let isActive = true;
       try {
         setLoading(true);
         setError("");
         const cleanUsername = username.replace(/^(@|%40)/, "");
-        const user = await UserService.getPublicProfile(cleanUsername);
+
+        const [user, userPosts, stats] = await Promise.all([
+          UserService.getPublicProfile(cleanUsername),
+          BlogService.getPostsByUsername(cleanUsername),
+          UserService.getFollowStats(cleanUsername),
+        ]);
+
+        if (!isActive) return;
+
         setProfileUser(user);
-
-        const userPosts = await BlogService.getPostsByUsername(cleanUsername);
         setPosts(userPosts);
-
-        const stats = await UserService.getFollowStats(cleanUsername);
         setFollowStats(stats);
 
+        // Dependent fetch: Following (depends on user ID)
         if (user && user.id) {
           const following = await UserService.getFollowing(user.id);
-          setFollowingList(following);
+          if (isActive) {
+            setFollowingList(following);
+          }
         }
       } catch (err: any) {
-        console.error("Failed to fetch profile data", err);
-        setError("User not found");
+        if (isActive) {
+          console.error("Failed to fetch profile data", err);
+          setError("User not found");
+        }
       } finally {
-        setLoading(false);
+        if (isActive) {
+          setLoading(false);
+        }
       }
+      return () => {
+        isActive = false;
+      };
     };
 
+    let cleanup: (() => void) | undefined;
     if (username) {
-      fetchProfileAndPosts();
+      fetchProfileAndPosts().then((c) => (cleanup = c));
     }
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, [username]);
 
   // Lazy Load Lists
@@ -144,7 +163,7 @@ export default function UserProfilePage() {
       {/* Edit / Follow Button */}
       <div className="mt-2">
         {isOwnProfile ? (
-          <Link href="/settings" className="text-black border border-black">
+          <Link href="/settings" className="text-green-600 hover:underline">
             Edit profile
           </Link>
         ) : authUser ? (

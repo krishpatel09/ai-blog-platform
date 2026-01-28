@@ -25,7 +25,8 @@ export class BlogService {
     console.log('slug', slug);
 
     const finalPublishDate = publishedAt ? new Date(publishedAt) : new Date();
-    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' = 'PUBLISHED';
+    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' =
+      createPostDto.status || 'PUBLISHED';
 
     try {
       const post = await this.prisma.post.create({

@@ -87,40 +87,63 @@ export default function NewBlogPage() {
 
   const isPublishingRef = useRef(false);
 
-  const handleFinalPublish = async (publishedAt: string | null) => {
+  const handleBlogSubmit = async (
+    status: "DRAFT" | "PUBLISHED",
+    publishedAt: string | null = null,
+  ) => {
+    if (status === "DRAFT" && !title) {
+      alert("Please enter a title to save draft");
+      return;
+    }
+
     if (isPublishingRef.current) return;
 
     try {
       isPublishingRef.current = true;
       setIsPublishing(true);
+
       const blogData = {
         title,
         tags,
         content,
         coverImage,
         publishedAt,
+        status,
       };
 
-      console.log("🚀 Publishing Blog Data:", blogData);
+      console.log(
+        `🚀 ${status === "DRAFT" ? "Saving Draft" : "Publishing"} Blog Data:`,
+        blogData,
+      );
 
       const response = await axiosInstance.post(API_PATH.BLOG.CREATE, blogData);
 
       if (response.data && response.data.slug) {
-        console.log("Published!", response.data);
-        router.push(`/${response.data.user.username}/${response.data.slug}`);
+        console.log(`${status} success!`, response.data);
+        if (status === "DRAFT") {
+          router.push("/");
+        } else {
+          router.push(`/${response.data.user.username}/${response.data.slug}`);
+        }
       } else {
         throw new Error("Invalid response from server");
       }
     } catch (error: any) {
-      console.error("Failed to publish:", error);
-      const errorMessage =
-        error.response?.data?.message || "Failed to publish blog";
+      console.error(`Failed to ${status.toLowerCase()}:`, error);
+      alert(`Failed to ${status.toLowerCase()}`);
     } finally {
-      if (!publishedAt) {
+      setIsPublishing(false);
+      isPublishingRef.current = false;
+      if (status === "PUBLISHED" && !publishedAt) {
         setShowPublishView(false);
       }
     }
   };
+
+  const handleSaveDraft = () => handleBlogSubmit("DRAFT");
+
+  const handleFinalPublish = (publishedAt: string | null) =>
+    handleBlogSubmit("PUBLISHED", publishedAt);
 
   if (authLoading || !user) {
     return (
@@ -204,7 +227,7 @@ export default function NewBlogPage() {
           {!isPreviewMode && (
             <BlogFooter
               onPublish={handlePublishClick}
-              onSave={() => console.log("Save draft")}
+              onSave={handleSaveDraft}
               onRevert={() => console.log("Revert changes")}
             />
           )}

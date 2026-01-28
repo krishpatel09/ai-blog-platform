@@ -93,6 +93,9 @@ axiosInstance.interceptors.response.use(
         console.error("[Axios] Refresh failed:", refreshError);
         processQueue(refreshError, null);
         Tokenservice.removeUser();
+        if (typeof window !== "undefined") {
+          window.location.href = "/sign-in";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

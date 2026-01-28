@@ -18,6 +18,7 @@ import { AiModule } from './ai/ai.module';
 import { BookmarkModule } from './bookmark/bookmark.module';
 import { UserFollowModule } from './userFollow/userfollow.module';
 import { CommentModule } from './comments/comment.module';
+import { StoriesModule } from './stories/stories.module';
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { CommentModule } from './comments/comment.module';
     BookmarkModule,
     UserFollowModule,
     CommentModule,
+    StoriesModule,
   ],
   controllers: [AppController],
   providers: [

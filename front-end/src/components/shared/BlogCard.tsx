@@ -129,27 +129,19 @@ export default function BlogCard({ blog }: BlogCardProps) {
     );
   }
 
-  /* Bookmark Logic */
-  useEffect(() => {
-    // Requirement: "if blogcard card data success then 2 second after call to bookmark list api call"
-    // We assume 'blog' prop existence means success.
-    const timer = setTimeout(() => {
-      fetchBookmarkLists(true);
-    }, 2000);
-
-    return () => clearTimeout(timer);
-  }, []); // Run once on mount
-
-  const fetchBookmarkLists = async (isBackground = false) => {
+  const fetchBookmarkLists = async () => {
     setIsLoadingBookmarks(true);
     try {
       const lists = await BookmarkService.getLists();
-      setBookmarkLists(lists);
+      if (Array.isArray(lists)) {
+        setBookmarkLists(lists);
+      } else {
+        console.error("Bookmark API returned non-array:", lists);
+        setBookmarkLists([]); // Fallback
+      }
     } catch (error) {
       console.error("Failed to fetch bookmark lists", error);
-      if (!isBackground) {
-        toast.error("Failed to load bookmarks");
-      }
+      toast.error("Failed to load bookmarks");
     } finally {
       setIsLoadingBookmarks(false);
     }
@@ -309,121 +301,15 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
             {/* Right Side: Actions */}
             <div className="flex items-center gap-2">
-              <DropdownMenu
-                open={isBookmarkOpen}
-                onOpenChange={setIsBookmarkOpen}
-              >
-                <ActionTooltip content="Bookmark">
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-gray-400 hover:text-gray-900 hover:bg-transparent"
-                      onClick={(e) => {
-                        handleInteraction(e);
-                        handleBookmarkClick();
-                      }}
-                    >
-                      <Bookmark size={20} />
-                    </Button>
-                  </DropdownMenuTrigger>
-                </ActionTooltip>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-64 p-2 bg-white rounded-lg shadow-xl border border-gray-100/50"
+              <ActionTooltip content="Save">
+                <Link
+                  href={`/@${blog.author.username}/${blog.slug}`}
+                  className="h-8 w-8 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  {isLoadingBookmarks ? (
-                    <div className="flex justify-center p-4">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-gray-900"></div>
-                    </div>
-                  ) : (
-                    <div className="space-y-1">
-                      {bookmarkLists.map((list) => {
-                        const isBookmarked = list.items?.some(
-                          (item: any) => item.postId === blog.id,
-                        );
-                        return (
-                          <div
-                            key={list.id}
-                            className="flex items-center space-x-2 p-2 hover:bg-gray-50 rounded-md cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleBookmarkItem(list.id, isBookmarked);
-                            }}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isBookmarked || false}
-                              readOnly
-                              className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black accent-black"
-                            />
-                            <span className="text-sm text-gray-700 flex-1 truncate">
-                              {list.name}
-                            </span>
-                          </div>
-                        );
-                      })}
-
-                      <DropdownMenuSeparator className="my-1 border-t border-gray-100" />
-
-                      {showCreateInput ? (
-                        <div className="p-2 space-y-2">
-                          <input
-                            type="text"
-                            placeholder="List Name"
-                            className="w-full px-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:border-black transition-colors"
-                            value={newListName}
-                            onChange={(e) => setNewListName(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleCreateList();
-                              e.stopPropagation();
-                            }}
-                            onClick={(e) => e.stopPropagation()}
-                            autoFocus
-                          />
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              className="w-full text-xs h-8 bg-black hover:bg-gray-800 text-white"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCreateList();
-                              }}
-                              disabled={isCreatingList || !newListName.trim()}
-                            >
-                              {isCreatingList ? "Creating..." : "Create"}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="w-auto text-xs h-8"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setShowCreateInput(false);
-                                setNewListName("");
-                              }}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <div
-                          className="flex items-center text-sm p-2 text-gray-500 hover:text-gray-900 hover:bg-gray-50 rounded-md cursor-pointer transition-colors"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setShowCreateInput(true);
-                          }}
-                        >
-                          <span className="mr-2 text-lg">+</span> Create new
-                          list
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </DropdownMenuContent>
-              </DropdownMenu>
+                  <Bookmark size={20} />
+                </Link>
+              </ActionTooltip>
 
               {/* more */}
               <DropdownMenu>

@@ -53,4 +53,8 @@ export const API_PATH = {
     DELETE: "/api/comments/delete/",
     LIKE: "/api/comments/like/",
   },
+  STORIES: {
+    GET_LIST: "/api/stories",
+    GET_STATS: "/api/stories/stats",
+  },
 };
