@@ -2,7 +2,9 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import slugify from 'slugify';
@@ -10,23 +12,24 @@ import { SlugService } from './service/slug.service';
 
 @Injectable()
 export class BlogService {
+  private readonly logger = new Logger(BlogService.name);
+
   constructor(
     private prisma: PrismaService,
     private slugService: SlugService,
   ) {}
 
   async create(userId: string, createPostDto: CreatePostDto) {
-    const { title, content, tags, coverImage, publishedAt } = createPostDto;
+    const { title, content, tags, coverImage, publishedAt, status } =
+      createPostDto;
+    console.log('createPostDto', createPostDto);
 
     let slug = await this.slugService.generateUniqueSlug(title);
     if (!slug) {
       throw new BadRequestException('Failed to generate unique slug');
     }
-    console.log('slug', slug);
 
     const finalPublishDate = publishedAt ? new Date(publishedAt) : new Date();
-    let status: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' =
-      createPostDto.status || 'PUBLISHED';
 
     try {
       const post = await this.prisma.post.create({
@@ -54,10 +57,38 @@ export class BlogService {
           },
         },
       });
-      console.log('post', post);
+      console.log('success');
       return post;
     } catch (error) {
       throw new BadRequestException(`Failed to create post: ${error.message}`);
+    }
+  }
+
+  // Task 3: Automated Status Transition
+  @Cron(CronExpression.EVERY_MINUTE)
+  async handleScheduledPosts() {
+    this.logger.log('Running Cron Job: Checking for scheduled posts...');
+    const now = new Date();
+
+    const result = await this.prisma.post.updateMany({
+      where: {
+        status: 'SCHEDULED',
+        publishedAt: {
+          lte: now,
+        },
+      },
+      data: {
+        status: 'PUBLISHED',
+      },
+    });
+
+    if (result.count > 0) {
+      this.logger.log(
+        `Cron Job Executed: Successfully published ${result.count} scheduled posts.`,
+      );
+    } else {
+      // Optional: don't spam logs if nothing happened, or log verbose
+      // this.logger.debug('No scheduled posts to publish.');
     }
   }
 

@@ -117,6 +117,7 @@ model Post {
   @@index([status, publishedAt])
   @@index([isFeatured, publishedAt])
   @@index([tags])
+  @@index([publishedAt])
 }
 
 
@@ -209,5 +210,6 @@ enum PostStatus {
 DRAFT
 PUBLISHED
 ARCHIVED
+SCHEDULED
 }
 

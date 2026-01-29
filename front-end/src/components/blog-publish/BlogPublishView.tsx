@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { X, Calendar as CalendarIcon, Clock } from "lucide-react";
 import axiosInstance from "@/services/api/axiosInstance";
+import { scheduleSchema } from "@/lib/zod/blog/schedule.schema";
+import { ZodError } from "zod";
 
 interface BlogPublishViewProps {
   title: string;
   onClose: () => void;
-  onPublish: (publishedAt: string | null) => void;
+  onPublish: (
+    publishedAt: string | null,
+    status: "PUBLISHED" | "SCHEDULED",
+  ) => void;
   isPublishing: boolean;
   coverImage: string | null;
 }
@@ -19,6 +24,8 @@ export default function BlogPublishView({
 }: BlogPublishViewProps) {
   const [scheduledDate, setScheduledDate] = useState<string>("");
   const [scheduledTime, setScheduledTime] = useState<string>("");
+  const [isTimeDropdownOpen, setIsTimeDropdownOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -28,18 +35,24 @@ export default function BlogPublishView({
   }, []);
 
   const handlePublishNow = () => {
-    // Current time like 2026-01-20T13:00:00.000Z
-    onPublish(new Date().toISOString());
+    onPublish(new Date().toISOString(), "PUBLISHED");
   };
 
   const handleSchedule = () => {
-    if (scheduledDate && scheduledTime) {
-      const dateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-      onPublish(dateTime.toISOString());
+    try {
+      scheduleSchema.parse({ scheduledDate, scheduledTime });
+      setError(null);
+
+      if (scheduledDate && scheduledTime) {
+        const dateTime = new Date(`${scheduledDate}T${scheduledTime}`);
+        onPublish(dateTime.toISOString(), "SCHEDULED");
+      }
+    } catch (err) {
+      if (err instanceof ZodError) {
+        setError(err.message);
+      }
     }
   };
-
-  const isScheduleValid = scheduledDate && scheduledTime;
 
   return (
     <div className="fixed inset-0 z-50 bg-white flex flex-col md:flex-row overflow-hidden animate-in fade-in slide-in-from-bottom-10 duration-300">
@@ -84,9 +97,24 @@ export default function BlogPublishView({
 
           {/* Publishing Option */}
           <div className="mb-8">
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              Check Date & Time
-            </label>
+            <div className="flex justify-between items-center mb-3">
+              <label className="block text-sm font-medium text-gray-700">
+                Check Date & Time
+              </label>
+              {(scheduledDate || scheduledTime) && (
+                <button
+                  onClick={() => {
+                    setScheduledDate("");
+                    setScheduledTime("");
+                    setError(null);
+                  }}
+                  className="p-1 hover:bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors"
+                  title="Clear schedule"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="relative">
@@ -95,50 +123,150 @@ export default function BlogPublishView({
                   </div>
                   <input
                     type="date"
+                    min={(() => {
+                      const today = new Date();
+                      const year = today.getFullYear();
+                      const month = String(today.getMonth() + 1).padStart(
+                        2,
+                        "0",
+                      );
+                      const day = String(today.getDate()).padStart(2, "0");
+                      return `${year}-${month}-${day}`;
+                    })()}
                     value={scheduledDate}
-                    onChange={(e) => setScheduledDate(e.target.value)}
+                    onChange={(e) => {
+                      setScheduledDate(e.target.value);
+                      setError(null);
+                    }}
                     className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-black focus:border-black sm:text-sm"
                   />
                 </div>
               </div>
               <div>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Clock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <input
-                    type="time"
-                    value={scheduledTime}
-                    onChange={(e) => setScheduledTime(e.target.value)}
-                    className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-black focus:border-black sm:text-sm"
-                  />
+                  <button
+                    type="button"
+                    onClick={() => setIsTimeDropdownOpen(!isTimeDropdownOpen)}
+                    className="w-full pl-3 pr-10 py-2 text-left border border-gray-300 rounded-md leading-5 bg-white focus:outline-none focus:ring-1 focus:ring-black focus:border-black sm:text-sm relative"
+                  >
+                    <span
+                      className={
+                        !scheduledTime ? "text-gray-500" : "text-gray-900"
+                      }
+                    >
+                      {scheduledTime
+                        ? (() => {
+                            const [h, m] = scheduledTime.split(":");
+                            const date = new Date();
+                            date.setHours(parseInt(h));
+                            date.setMinutes(parseInt(m));
+                            return date.toLocaleTimeString([], {
+                              hour: "numeric",
+                              minute: "2-digit",
+                              hour12: true,
+                            });
+                          })()
+                        : "Select time"}
+                    </span>
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <Clock className="h-5 w-5 text-gray-400" />
+                    </div>
+                  </button>
+
+                  {isTimeDropdownOpen && (
+                    <div className="absolute z-10 mt-1 w-full bg-white shadow-lg max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                      {Array.from({ length: 96 }).map((_, i) => {
+                        const hour = Math.floor(i / 4);
+                        const minute = (i % 4) * 15;
+                        const timeString = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+
+                        const date = new Date();
+                        date.setHours(hour);
+                        date.setMinutes(minute);
+
+                        const displayTime = date.toLocaleTimeString([], {
+                          hour: "numeric",
+                          minute: "2-digit",
+                          hour12: true,
+                        });
+
+                        const isDisabled = (() => {
+                          if (!scheduledDate) return false;
+                          const today = new Date();
+                          const year = today.getFullYear();
+                          const month = String(today.getMonth() + 1).padStart(
+                            2,
+                            "0",
+                          );
+                          const day = String(today.getDate()).padStart(2, "0");
+                          const todayString = `${year}-${month}-${day}`;
+
+                          if (scheduledDate === todayString) {
+                            const currentHour = today.getHours();
+                            const currentMinute = today.getMinutes();
+                            if (
+                              hour < currentHour ||
+                              (hour === currentHour && minute < currentMinute)
+                            ) {
+                              return true;
+                            }
+                          }
+                          return false;
+                        })();
+
+                        if (isDisabled) return null;
+
+                        return (
+                          <div
+                            key={timeString}
+                            onClick={() => {
+                              setScheduledTime(timeString);
+                              setIsTimeDropdownOpen(false);
+                              setError(null);
+                            }}
+                            className={`cursor-pointer select-none relative py-2 pl-3 pr-9 hover:bg-gray-100 ${
+                              scheduledTime === timeString
+                                ? "bg-gray-100 font-medium text-black"
+                                : "text-gray-900"
+                            }`}
+                          >
+                            <span className="block truncate">
+                              {displayTime}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
-            <p className="mt-2 text-sm text-gray-500">
+            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+            <p className="mt-2 text-sm font-bold text-gray-700">
               Leave blank to publish immediately.
             </p>
           </div>
 
           {/* Action Buttons */}
+          {/* Action Buttons */}
           <div className="flex flex-col gap-3">
-            {!scheduledDate && !scheduledTime ? (
+            <div className="flex gap-3">
               <button
                 onClick={handlePublishNow}
-                disabled={isPublishing}
-                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPublishing || !!scheduledDate}
+                className="flex-1 px-6 py-3 bg-green-600 hover:bg-green-700 disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:cursor-not-allowed"
               >
                 {isPublishing ? "Publishing..." : "Publish Now"}
               </button>
-            ) : (
+
               <button
                 onClick={handleSchedule}
-                disabled={!isScheduleValid || isPublishing}
-                className="w-full px-6 py-3 bg-black hover:bg-gray-800 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={isPublishing || !scheduledDate || !scheduledTime}
+                className="flex-1 px-6 py-3 bg-black hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2 disabled:cursor-not-allowed"
               >
-                {isPublishing ? "Scheduling..." : "Schedule Publish"}
+                {isPublishing ? "Scheduling..." : "Schedule Post"}
               </button>
-            )}
+            </div>
 
             <button
               onClick={onClose}

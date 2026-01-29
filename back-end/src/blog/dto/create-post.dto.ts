@@ -23,5 +23,5 @@ export class CreatePostDto {
 
   @IsString()
   @IsOptional()
-  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+  status?: 'DRAFT' | 'PUBLISHED' | 'ARCHIVED' | 'SCHEDULED';
 }

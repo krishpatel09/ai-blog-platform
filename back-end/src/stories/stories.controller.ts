@@ -1,4 +1,13 @@
-import { Controller, Get, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Req,
+  UseGuards,
+  BadRequestException,
+} from '@nestjs/common';
 import { StoriesService } from './stories.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -10,6 +19,11 @@ export class StoriesController {
   @Get('stats')
   async getStats(@Req() req) {
     return this.storiesService.getStats(req.user.id);
+  }
+
+  @Post('import')
+  async importStory(@Body() body: { url: string }) {
+    return this.storiesService.importOnly(body.url);
   }
 
   @Get()

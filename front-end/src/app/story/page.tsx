@@ -55,13 +55,12 @@ export default function StoryPage() {
         case "drafts":
           return status === "DRAFT";
         case "published":
-          return status === "PUBLISHED" && pubDate && pubDate <= now;
+          return status === "PUBLISHED" && (!pubDate || pubDate <= now);
         case "scheduled":
-          return status === "PUBLISHED" && pubDate && pubDate > now;
-        case "unlisted":
-          return status === "ARCHIVED";
-        case "submissions":
-          return false; // Not implemented
+          return (
+            status === "SCHEDULED" ||
+            (status === "PUBLISHED" && pubDate && pubDate > now)
+          );
         default:
           return true;
       }
@@ -77,12 +76,14 @@ export default function StoryPage() {
           Stories
         </h1>
         <div className="flex gap-4">
-          <Button
-            variant="outline"
-            className="rounded-full border-black text-black hover:bg-gray-50 px-6"
-          >
-            Import a story
-          </Button>
+          <Link href="/import">
+            <Button
+              variant="outline"
+              className="rounded-full border-black text-black hover:bg-gray-50 px-6"
+            >
+              Import a story
+            </Button>
+          </Link>
           <Link href="/new-blog">
             <Button className="rounded-full bg-green-700 hover:bg-green-800 px-6 text-white hidden">
               Write Story
@@ -97,8 +98,6 @@ export default function StoryPage() {
           { id: "drafts", label: `Drafts ${stats?.drafts || ""}` },
           { id: "scheduled", label: `Scheduled ${stats?.scheduled || ""}` },
           { id: "published", label: `Published ${stats?.published || ""}` },
-          { id: "unlisted", label: `Unlisted ${stats?.unlisted || ""}` },
-          { id: "submissions", label: "Submissions" },
         ].map((tab) => (
           <button
             key={tab.id}
@@ -147,10 +146,6 @@ function StoryItem({ story }: { story: any }) {
         href={`/new-blog?id=${story.id}`}
         className="flex items-start gap-4 max-w-[70%] w-full"
       >
-        {/* Using Link to edit or view. For draft, usually /p/id/edit. Using /new-blog?id= for now or just generic link */}
-        {/* Wait, user didn't specify edit link. Assuming text is clickable or title is. I'll make the block clickable to edit if draft, view if published? */}
-        {/* Let's just make the title/content clickable to standard route for now, or keep div structure if no link requested. */}
-        {/* Original code didn't have link. I will add basic display logic. */}
         <div className="w-14 h-10 bg-gray-100 shrink-0 flex items-center justify-center text-gray-400 overflow-hidden rounded-sm">
           {story.coverImage ? (
             <Image
@@ -182,8 +177,12 @@ function StoryItem({ story }: { story: any }) {
             {story.title || "Untitled Story"}
           </h3>
           <p className="text-xs text-gray-500">
-            {isDraft ? "Draft" : "Published"} · {story.readTime || 1} min read ·{" "}
-            {dateFormatted}
+            {isDraft
+              ? "Draft"
+              : story.status === "SCHEDULED"
+                ? "Scheduled"
+                : "Published"}{" "}
+            · {story.readTime || 1} min read · {dateFormatted}
           </p>
         </div>
       </Link>

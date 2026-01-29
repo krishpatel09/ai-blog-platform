@@ -16,14 +16,32 @@ import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
 import { blogSchema } from "@/lib/zod/blog/blog.schema";
 import { ZodError } from "zod";
+import { useToast } from "@/hooks/use-toast";
 
 export default function NewBlogPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
+  const { showSuccess, showError } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
       router.push("/sign-in");
+    }
+
+    // Check for imported story
+    const importDraft = localStorage.getItem("import_draft");
+    if (importDraft) {
+      try {
+        const parsed = JSON.parse(importDraft);
+        setTitle(parsed.title || "");
+        setContent(parsed.content || {});
+        if (parsed.image) {
+          setCoverImage(parsed.image);
+        }
+        localStorage.removeItem("import_draft");
+      } catch (e) {
+        console.error("Failed to parse imported draft", e);
+      }
     }
   }, [user, authLoading, router]);
 
@@ -42,6 +60,7 @@ export default function NewBlogPage() {
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [showPublishView, setShowPublishView] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   // Context-aware helper state
   type HelperState = "default" | "title" | "tags" | "editor";
@@ -88,11 +107,11 @@ export default function NewBlogPage() {
   const isPublishingRef = useRef(false);
 
   const handleBlogSubmit = async (
-    status: "DRAFT" | "PUBLISHED",
+    status: "DRAFT" | "PUBLISHED" | "SCHEDULED",
     publishedAt: string | null = null,
   ) => {
     if (status === "DRAFT" && !title) {
-      alert("Please enter a title to save draft");
+      showError("Please enter a title to save draft");
       return;
     }
 
@@ -100,7 +119,11 @@ export default function NewBlogPage() {
 
     try {
       isPublishingRef.current = true;
-      setIsPublishing(true);
+      if (status === "DRAFT") {
+        setIsSavingDraft(true);
+      } else {
+        setIsPublishing(true);
+      }
 
       const blogData = {
         title,
@@ -119,10 +142,17 @@ export default function NewBlogPage() {
       const response = await axiosInstance.post(API_PATH.BLOG.CREATE, blogData);
 
       if (response.data && response.data.slug) {
-        console.log(`${status} success!`, response.data);
-        if (status === "DRAFT") {
+        const responseStatus = response.data.status;
+        console.log(`${responseStatus} success!`, response.data);
+
+        if (responseStatus === "DRAFT") {
+          showSuccess("Draft saved successfully");
+          router.push("/");
+        } else if (responseStatus === "SCHEDULED") {
+          showSuccess("Blog scheduled successfully");
           router.push("/");
         } else {
+          showSuccess("Blog published successfully");
           router.push(`/${response.data.user.username}/${response.data.slug}`);
         }
       } else {
@@ -130,9 +160,10 @@ export default function NewBlogPage() {
       }
     } catch (error: any) {
       console.error(`Failed to ${status.toLowerCase()}:`, error);
-      alert(`Failed to ${status.toLowerCase()}`);
+      showError(`Failed to ${status.toLowerCase()}`);
     } finally {
       setIsPublishing(false);
+      setIsSavingDraft(false);
       isPublishingRef.current = false;
       if (status === "PUBLISHED" && !publishedAt) {
         setShowPublishView(false);
@@ -142,8 +173,10 @@ export default function NewBlogPage() {
 
   const handleSaveDraft = () => handleBlogSubmit("DRAFT");
 
-  const handleFinalPublish = (publishedAt: string | null) =>
-    handleBlogSubmit("PUBLISHED", publishedAt);
+  const handleFinalPublish = (
+    publishedAt: string | null,
+    status: "PUBLISHED" | "SCHEDULED" = "PUBLISHED",
+  ) => handleBlogSubmit(status, publishedAt);
 
   if (authLoading || !user) {
     return (
@@ -219,6 +252,7 @@ export default function NewBlogPage() {
               onFocus={() => setActiveHelper("editor")}
               isReadOnly={isPreviewMode}
               onChange={setContent}
+              initialContent={content}
               coverImage={coverImage}
             />
           </div>
@@ -229,6 +263,7 @@ export default function NewBlogPage() {
               onPublish={handlePublishClick}
               onSave={handleSaveDraft}
               onRevert={() => console.log("Revert changes")}
+              isSaving={isSavingDraft}
             />
           )}
         </div>
@@ -269,7 +304,9 @@ export default function NewBlogPage() {
           title={title}
           coverImage={coverImage}
           onClose={() => setShowPublishView(false)}
-          onPublish={handleFinalPublish}
+          onPublish={(publishedAt, status) => {
+            handleFinalPublish(publishedAt, status);
+          }}
           isPublishing={isPublishing}
         />
       )}

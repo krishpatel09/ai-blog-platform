@@ -50,6 +50,40 @@ const BlogEditor = ({
     }
   }, [editor, isReadOnly]);
 
+  // Sync initialContent prop with editor content
+  useEffect(() => {
+    if (editor && initialContent) {
+      // Avoid resetting cursor or re-rendering if content is effectively same to avoid loops
+      // But here we mainly want to catch the async load.
+      // We can check if editor is empty or just force set it if it differs significantly?
+      // JSON comparison is heavy.
+      // For this simple case of "import loading", checking if editor has basic empty content might be enough,
+      // or just trusting the prop update for now if it's not frequent.
+      // Let's just set it. TipTap usually handles diffs well or we can check.
+      const currentContent = editor.getJSON();
+      // Simple check to see if we are "initializing"
+      const isEmpty = editor.isEmpty;
+      if (isEmpty && initialContent) {
+        editor.commands.setContent(initialContent);
+      } else if (
+        initialContent &&
+        JSON.stringify(initialContent) !== JSON.stringify(currentContent)
+      ) {
+        // This might cause loops if onChange updates parent state which updates this prop.
+        // Since we track 'content' in parent via onChange, we should be careful.
+        // The parent uses 'content' state primarily for saving.
+        // If we want to use 'initialContent' purely for initialization, we shouldn't sync it constantly.
+        // The issue is the async load from localStorage happens AFTER first render.
+        // So we DO need to update.
+        // But after that, user types -> updates parent 'content' -> passes back here?
+        // If parent passes 'content' back to 'initialContent', we might get loops.
+        // NewBlogPage: passed `content={content}`. `content` starts null, then updates.
+        // So yes, we need this check.
+        editor.commands.setContent(initialContent);
+      }
+    }
+  }, [editor, initialContent]);
+
   return (
     <div className="w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col">
       {!isReadOnly && (

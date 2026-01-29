@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -9,7 +10,6 @@ import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import databaseConfig from './config/database.config';
 import imagekitConfig from './config/imagekit.config';
-import { ClerkWebhookModule } from './webhooks/clerk/clerk.module';
 import { TagsModule } from './tags/tags.module';
 import { UsersModule } from './users/users.module';
 import { BlogModule } from './blog/blog.module';
@@ -28,7 +28,6 @@ import { StoriesModule } from './stories/stories.module';
     }),
     PrismaModule,
     AuthModule,
-    ClerkWebhookModule,
     TagsModule,
     UsersModule,
     BlogModule,
@@ -38,6 +37,7 @@ import { StoriesModule } from './stories/stories.module';
     UserFollowModule,
     CommentModule,
     StoriesModule,
+    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [

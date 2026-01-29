@@ -56,5 +56,6 @@ export const API_PATH = {
   STORIES: {
     GET_LIST: "/api/stories",
     GET_STATS: "/api/stories/stats",
+    IMPORT: "/api/stories/import",
   },
 };

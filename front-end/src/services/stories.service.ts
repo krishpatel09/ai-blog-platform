@@ -5,8 +5,6 @@ export interface StoryStats {
   drafts: number;
   published: number;
   scheduled: number;
-  unlisted: number;
-  submissions: number;
 }
 
 const StoriesService = {
@@ -19,6 +17,12 @@ const StoriesService = {
     const response = await axiosInstance.get(API_PATH.STORIES.GET_LIST, {
       params: { status, page, limit },
     });
+    return response.data;
+  },
+
+  importStory: async (url: string) => {
+    const response = await axiosInstance.post(API_PATH.STORIES.IMPORT, { url });
+    console.log(response.data);
     return response.data;
   },
 };
