@@ -58,4 +58,10 @@ export const API_PATH = {
     GET_STATS: "/api/stories/stats",
     IMPORT: "/api/stories/import",
   },
+  NOTIFICATIONS: {
+    GET_ALL: "/api/notifications",
+    MARK_READ: "/api/notifications/read", // :id/read handled in service
+    MARK_ALL_READ: "/api/notifications/read-all",
+    DELETE: "/api/notifications", // :id handled in service
+  },
 };

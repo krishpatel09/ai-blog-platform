@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import NotificationService from "@/services/api/NotificationService";
 
 interface HeaderProps {
   isCollapsed: boolean;
@@ -28,6 +29,25 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
 
   const { showSuccess, showError, showLoading, dismiss } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    }
+  }, [user]);
+
+  const fetchNotifications = async () => {
+    try {
+      const data = await NotificationService.getAll();
+      console.log("Header: Notification Data:", data);
+      const unreadCount = data.filter((n: any) => !n.isRead).length;
+      console.log("Header: Unread Count:", unreadCount);
+      setNotificationCount(unreadCount);
+    } catch (error) {
+      console.error("Failed to fetch notifications", error);
+    }
+  };
 
   const { signOut } = useClerk();
 
@@ -102,10 +122,15 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
               <span className="text-sm hidden sm:block font-medium">Write</span>
             </Link>
             <Link
-              href="/notification"
-              className="text-gray-500 hover:text-gray-700 transition-colors"
+              href="/me/notifications"
+              className="text-gray-500 hover:text-gray-700 transition-colors relative"
             >
               <Bell size={20} />
+              {notificationCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                  {notificationCount > 9 ? "9+" : notificationCount}
+                </span>
+              )}
             </Link>
 
             {/* User Profile Dropdown */}
@@ -163,7 +188,7 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
                 <div className="py-2">
                   <DropdownMenuItem asChild>
                     <Link
-                      href="/settings"
+                      href="/me/settings"
                       className="px-6 py-2 cursor-pointer flex items-center gap-3 text-gray-600 hover:text-black focus:text-black hover:bg-transparent focu:bg-transparent"
                     >
                       <Settings size={18} className="text-gray-400" />

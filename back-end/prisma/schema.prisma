@@ -28,6 +28,8 @@ model User {
   CommentLikes CommentLike[]
   followers       UserFollow[]       @relation("UserFollowers")
   following       UserFollow[]       @relation("UserFollowing")
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent     Notification[] @relation("NotificationActor") 
 }
 
 model UserSecurity {
@@ -110,6 +112,7 @@ model Post {
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   bookmarkItems BookmarkItem[]
   comments      Comment[]
+  notifications Notification[]
 
 
   @@index([userId])
@@ -181,6 +184,7 @@ model Comment {
   parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
   replies     Comment[] @relation("CommentReplies")
   likes       CommentLike[]
+  notifications Notification[]
   likeCount   Int       @default(0)
 
   @@index([postId])
@@ -200,6 +204,30 @@ model CommentLike {
   @@index([commentId])
 }
 
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String           
+  actorId     String?          
+  type        NotificationType
+  title     String   @db.VarChar(100)
+  message   String   @db.VarChar(255)
+  data      Json?
+  
+  postId      String?
+  commentId   String?
+  
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([type])
+}
+
 
 
 
@@ -213,3 +241,12 @@ ARCHIVED
 SCHEDULED
 }
 
+
+enum NotificationType {
+  FOLLOW
+  POST_LIKE
+  NEW_POST
+  NEW_COMMENT
+  COMMENT_REPLY
+  SYSTEM  
+}

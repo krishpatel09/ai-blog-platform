@@ -24,9 +24,9 @@ export default function ImportStoryPage() {
     try {
       setIsLoading(true);
       const data = await StoriesService.importStory(url);
-
-      if (data.success && data.importedData) {
-        setImportedData(data.importedData);
+      console.log(data);
+      if (data.success && data.data) {
+        setImportedData(data.data);
         setImportSuccess(true);
         showSuccess("Story imported successfully");
       }

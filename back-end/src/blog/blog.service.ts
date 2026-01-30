@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import slugify from 'slugify';
 import { SlugService } from './service/slug.service';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class BlogService {
@@ -17,6 +19,7 @@ export class BlogService {
   constructor(
     private prisma: PrismaService,
     private slugService: SlugService,
+    private readonly notificationService: NotificationService,
   ) {}
 
   async create(userId: string, createPostDto: CreatePostDto) {
@@ -58,6 +61,31 @@ export class BlogService {
         },
       });
       console.log('success');
+
+      // Notification Fan-out
+      if (status === 'PUBLISHED') {
+        // Find all followers
+        const followers = await this.prisma.userFollow.findMany({
+          where: { followingId: userId },
+          select: { followerId: true },
+        });
+
+        // Create notifications for each follower
+        // Using Promise.all for efficiency as requested
+        await Promise.all(
+          followers.map((follower) =>
+            this.notificationService.createAndSend({
+              recipientId: follower.followerId,
+              actorId: userId,
+              type: NotificationType.NEW_POST,
+              title: 'New Post',
+              message: `${post.user.name} published a new post: ${post.title}`,
+              postId: post.id,
+            }),
+          ),
+        );
+      }
+
       return post;
     } catch (error) {
       throw new BadRequestException(`Failed to create post: ${error.message}`);

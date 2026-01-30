@@ -7,17 +7,22 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { NotificationService } from '../notifications/notifications.service';
+import { NotificationType } from '@prisma/client';
 
 @Injectable()
 export class CommentService {
   private readonly logger = new Logger(CommentService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationService: NotificationService,
+  ) {}
 
   async createComment(userId: string, createCommentDto: CreateCommentDto) {
     const { postId, content, parentId } = createCommentDto;
 
-    return await this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       const post = await tx.post.findUnique({
         where: { id: postId },
       });
@@ -76,8 +81,23 @@ export class CommentService {
         },
       });
 
-      return comment;
+      return { comment, post };
     });
+
+    // Notify post author if commenter is not the author
+    if (result.post.userId !== userId) {
+      await this.notificationService.createAndSend({
+        recipientId: result.post.userId,
+        actorId: userId,
+        type: NotificationType.NEW_COMMENT,
+        title: 'New Comment',
+        message: `${result.comment.user.name} commented on your post`,
+        postId: postId,
+        commentId: result.comment.id,
+      });
+    }
+
+    return result.comment;
   }
   async toggleCommentLike(userId: string, commentId: string) {
     return await this.prisma.$transaction(async (tx) => {
