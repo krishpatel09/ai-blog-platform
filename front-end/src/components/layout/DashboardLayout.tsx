@@ -1,36 +1,36 @@
 "use client";
 
 import { useState, ReactNode } from "react";
+import { usePathname } from "next/navigation";
 import Header from "./hearder";
 import Sidebar from "./sidebar";
-import RightSidebar from "./right-sidebar";
 
 interface DashboardLayoutProps {
   children: ReactNode;
-  showRightSidebar?: boolean;
   contentClassName?: string;
 }
 
 export default function DashboardLayout({
   children,
-  showRightSidebar = true,
-  contentClassName = "max-w-[690px] mx-auto",
+  contentClassName = "max-w-4xl mx-auto",
 }: DashboardLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const pathname = usePathname();
 
   const toggleCollapse = () => {
     setIsCollapsed(!isCollapsed);
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
-      {/* Header */}
+    <div className="flex h-screen flex-col bg-gray-50 overflow-hidden">
+      {/* Header - Fixed Height */}
       <Header isCollapsed={isCollapsed} onToggleCollapse={toggleCollapse} />
 
-      <div className="flex w-full max-w-[1336px] mx-auto pt-24">
-        {/* Left Sidebar - Collapsible */}
+      {/* Main Container - App Style Fixed Layout */}
+      <div className="flex flex-1 w-full max-w-[1500px] mx-auto pt-16 overflow-hidden relative">
+        {/* Left Sidebar - Independent Scroll */}
         <div
-          className={`hidden md:block shrink-0 sticky top-20 h-[calc(100vh-5rem)] transition-all duration-700 ease-in-out overflow-hidden ${
+          className={`hidden md:block shrink-0 h-full transition-all duration-700 ease-in-out overflow-y-auto sidebar-scrollbar ${
             isCollapsed ? "w-0" : "w-60"
           }`}
         >
@@ -39,27 +39,20 @@ export default function DashboardLayout({
 
         {/* Left Vertical Line */}
         <div
-          className={`hidden md:block w-px bg-gray-200 mx-4 transition-all duration-700 ease-in-out ${
+          className={`hidden md:block w-px bg-gray-200 mr-6 ml-1 transition-all duration-700 ease-in-out h-full ${
             isCollapsed ? "opacity-0 w-0 mx-0 overflow-hidden" : "opacity-100"
           }`}
         />
 
-        {/* Main Content */}
-        <main className="grow min-w-0 pb-10 transition-all duration-700 ease-in-out">
-          <div className={`${contentClassName}`}>{children}</div>
-        </main>
-
-        {/* Right Vertical Line */}
-        {showRightSidebar && (
-          <div className="hidden xl:block w-px bg-gray-200 mx-6 h-[calc(100vh-5rem)] sticky top-20" />
-        )}
-
-        {/* Right Sidebar - Optional */}
-        {showRightSidebar && (
-          <div className="hidden xl:block w-[312px] shrink-0 sticky top-20 h-[calc(100vh-5rem)]">
-            <RightSidebar />
+        {/* Center Scroll Container */}
+        <main className="grow min-w-0 h-full overflow-y-auto transition-all duration-700 ease-in-out scroll-smooth no-scrollbar flex">
+          {/* Center Content */}
+          <div className="flex-1 min-w-0">
+            <div className={`${contentClassName} py-8 md:py-12`}>
+              {children}
+            </div>
           </div>
-        )}
+        </main>
       </div>
     </div>
   );

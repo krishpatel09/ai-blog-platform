@@ -38,7 +38,7 @@ axiosInstance.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error);
-  }
+  },
 );
 
 // Response Interceptor
@@ -54,7 +54,9 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalConfig._retry) {
+      console.log("[Axios] 401 detected, attempting refresh...");
       if (isRefreshing) {
+        console.log("[Axios] Refresh already in progress, queuing request");
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
@@ -66,47 +68,41 @@ axiosInstance.interceptors.response.use(
       }
       originalConfig._retry = true;
       isRefreshing = true;
-      console.log(
-        "🔄 [Axios] Access Token expired (401). Attempting refresh..."
-      ); // Debug log
 
       try {
+        console.log("[Axios] Calling refresh endpoint...");
         const response = await axios.post(
           `${URL}${API_PATH.AUTH.REFRESH_TOKEN}`,
           {},
           {
             withCredentials: true,
-          }
+          },
         );
+        console.log("[Axios] Refresh successful", response.data);
         const accessToken =
           response.data?.accessToken || response.data?.data?.accessToken;
 
         if (!accessToken) throw new Error("No access token received");
 
-        console.log(
-          "✅ [Axios] Refresh successful. Retrying original request..."
-        ); // Debug log
         Tokenservice.updateLocalAccessToken(accessToken);
         processQueue(null, accessToken);
 
         originalConfig.headers["Authorization"] = `Bearer ${accessToken}`;
         return axiosInstance(originalConfig);
       } catch (refreshError: any) {
-        console.error(
-          "❌ [Axios] Refresh failed. Redirecting to login...",
-          refreshError
-        ); // Debug log
+        console.error("[Axios] Refresh failed:", refreshError);
         processQueue(refreshError, null);
         Tokenservice.removeUser();
-
-        window.location.href = "/sign-in";
+        if (typeof window !== "undefined") {
+          window.location.href = "/sign-in";
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 export default axiosInstance;

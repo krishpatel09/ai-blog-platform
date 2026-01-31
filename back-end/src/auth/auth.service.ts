@@ -154,6 +154,8 @@ export class AuthService {
             username: user.username,
             email: user.email,
             emailVerified: user.security.emailVerified,
+            avatar: user.avatar,
+            name: user.name,
           },
         },
       };
@@ -200,62 +202,56 @@ export class AuthService {
     };
   }
 
-  async refreshToken(
-    dto: RefreshTokenDto,
-    ipAddress?: string,
-    userAgent?: string,
-  ) {
+  async refreshToken(dto: RefreshTokenDto) {
     try {
       const oldRefreshToken = await this.tokenService.validateRefreshToken(
         dto.refreshToken,
       );
+      console.log('Old refresh token validated', oldRefreshToken.id);
 
-      if (oldRefreshToken.isRevoked) {
-        await this.auditService.log({
-          userId: oldRefreshToken.userId,
-          action: 'TOKEN_REFRESH_FAILED',
-          ipAddress,
-          userAgent,
-          success: false,
-        });
-        throw new UnauthorizedException('Refresh token has been revoked');
-      }
+      // Determine if 'rememberMe' was used based on the token's original lifespan
+      // standard is 1 day (approx 86400000ms), remembered is 7 days
+      const duration =
+        oldRefreshToken.expiresAt.getTime() -
+        oldRefreshToken.createdAt.getTime();
+      const rememberMe = duration > 24 * 60 * 60 * 1000 * 1.5; // > 36 hours implies 7 days
 
-      // Only generate NEW accessToken
-      // Keep the SAME refreshToken (no rotation needed)
+      // Delete the old refresh token (Rotation)
+      await this.tokenService.deleteRefreshToken(dto.refreshToken);
+
+      // Generate new access token
       const accessToken = this.tokenService.generateAccessToken({
         userId: oldRefreshToken.user.id,
         username: oldRefreshToken.user.username,
         email: oldRefreshToken.user.email,
       });
 
-      await this.auditService.log({
-        userId: oldRefreshToken.user.id,
-        action: 'TOKEN_REFRESH',
-        ipAddress,
-        userAgent,
-        success: true,
-      });
-      console.log('Token refreshed successfully', accessToken);
+      // Generate new refresh token
+      const { token: refreshToken, expiresInMs } =
+        await this.tokenService.generateRefreshToken(
+          oldRefreshToken.user.id,
+          rememberMe,
+        );
+
+      console.log(
+        'Token rotated successfully for user:',
+        oldRefreshToken.user.id,
+      );
+
       return {
         message: 'Token refreshed successfully',
         success: true,
         data: {
           accessToken,
-          user: {
-            id: oldRefreshToken.user.id,
-            username: oldRefreshToken.user.username,
-            email: oldRefreshToken.user.email,
-            emailVerified:
-              oldRefreshToken.user.security?.emailVerified || false,
-          },
+          refreshToken, // Important: Return this so CookieInterceptor can set the new cookie
+          expiresInMs,
         },
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
-      console.error(error);
+      console.error('Refresh Token Error:', error);
       throw new InternalServerErrorException('Internal server error');
     }
   }
@@ -317,6 +313,8 @@ export class AuthService {
           username: userSecurity.user.username,
           email: userSecurity.user.email,
           emailVerified: true,
+          avatar: userSecurity.user.avatar,
+          name: userSecurity.user.name,
         },
       },
     };
@@ -384,87 +382,35 @@ export class AuthService {
   ) {
     try {
       const session = await clerkClient.sessions.getSession(sessionId);
-      this.logger.log(
-        `[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`,
-      );
 
       if (!session || session.status !== 'active') {
-        this.logger.error(
-          `[Clerk Verify] Invalid or expired session: ${sessionId}`,
-        );
+        this.logger.error(`[Clerk Verify] Invalid session: ${sessionId}`);
         throw new UnauthorizedException('Invalid or expired Clerk session');
       }
 
       const clerkUser = await clerkClient.users.getUser(session.userId);
-      this.logger.log(
-        `[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${clerkUser.emailAddresses[0]?.emailAddress}`,
-      );
+      const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
 
-      if (!clerkUser) {
-        this.logger.error(
-          `[Clerk Verify] Clerk user not found for session: ${sessionId}`,
+      if (!primaryEmail) {
+        throw new BadRequestException(
+          'No email address associated with Clerk account',
         );
-        throw new UnauthorizedException('Clerk user not found');
       }
 
-      const maxRetries = 20;
-      const retryDelay = 500;
-      type UserWithSecurity = Awaited<
-        ReturnType<typeof this.prisma.user.findUnique>
-      >;
-      let user: UserWithSecurity = null;
-      let retryCount = 0;
+      const fullName =
+        clerkUser.firstName && clerkUser.lastName
+          ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+          : clerkUser.username || primaryEmail.split('@')[0];
+      console.log('Full Name:', fullName);
 
-      this.logger.log(
-        `[Clerk Verify] Starting database polling for clerkId: ${clerkUser.id}`,
-      );
+      const username =
+        clerkUser.username ||
+        `${primaryEmail.split('@')[0]}_${Math.floor(1000 + Math.random() * 9000)}`;
+      console.log('Username:', username);
 
-      while (retryCount < maxRetries && !user) {
-        user = await this.prisma.user.findUnique({
-          where: { clerkId: clerkUser.id },
-          include: { security: true },
-        });
-
-        if (user) {
-          this.logger.log(
-            `[Clerk Verify] User found in database after ${retryCount} retries (${retryCount * retryDelay}ms)`,
-          );
-          break;
-        }
-
-        retryCount++;
-        this.logger.log(
-          `[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`,
-        );
-
-        await new Promise((resolve) => setTimeout(resolve, retryDelay));
-      }
-      if (!user) {
-        this.logger.warn(
-          `[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`,
-        );
-
-        const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
-
-        if (!primaryEmail) {
-          this.logger.error(
-            `[Clerk Verify] No email address found for Clerk user: ${clerkUser.id}`,
-          );
-          throw new BadRequestException(
-            'No email address associated with Clerk account',
-          );
-        }
-
-        const fullName =
-          clerkUser.firstName && clerkUser.lastName
-            ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
-            : clerkUser.username || primaryEmail.split('@')[0];
-
-        const username =
-          clerkUser.username || primaryEmail.split('@')[0] + '_clerk';
-
-        user = await this.prisma.$transaction(async (tx) => {
-          const newUser = await tx.user.upsert({
+      const user = await this.prisma.$transaction(
+        async (tx) => {
+          const dbUser = await tx.user.upsert({
             where: { email: primaryEmail },
             update: {
               clerkId: clerkUser.id,
@@ -481,51 +427,32 @@ export class AuthService {
             },
           });
 
-          const existingSecurity = await tx.userSecurity.findUnique({
-            where: { userId: newUser.id },
+          await tx.userSecurity.upsert({
+            where: { userId: dbUser.id },
+            update: { emailVerified: true },
+            create: {
+              userId: dbUser.id,
+              password: '',
+              emailVerified: true,
+            },
           });
-
-          if (!existingSecurity) {
-            await tx.userSecurity.create({
-              data: {
-                userId: newUser.id,
-                password: '',
-                emailVerified: true,
-                emailVerificationToken: null,
-                emailVerificationExpires: null,
-              },
-            });
-          } else {
-            await tx.userSecurity.update({
-              where: { userId: newUser.id },
-              data: {
-                emailVerified: true,
-              },
-            });
-          }
 
           return tx.user.findUnique({
-            where: { id: newUser.id },
+            where: { id: dbUser.id },
             include: { security: true },
           });
-        });
+        },
+        {
+          maxWait: 5000, // Wait max 5s for transaction to start
+          timeout: 10000, // Transaction must finish in 10s
+        },
+      );
+      console.log('User:', user);
 
-        this.logger.log(
-          `[Clerk Verify] Fallback user creation successful: ${user?.id}`,
+      if (!user || !user.isActive) {
+        throw new UnauthorizedException(
+          'Account is inactive or could not be created',
         );
-      }
-
-      if (!user) {
-        throw new InternalServerErrorException(
-          'Failed to create or retrieve user',
-        );
-      }
-
-      if (!user.isActive) {
-        this.logger.error(
-          `[Clerk Verify] User account is inactive: ${user.id}`,
-        );
-        throw new UnauthorizedException('Account is inactive');
       }
 
       const accessToken = this.tokenService.generateAccessToken({
@@ -533,25 +460,17 @@ export class AuthService {
         username: user.username,
         email: user.email,
       });
+      console.log('Access Token:', accessToken);
 
       const { token: refreshToken, expiresInMs } =
         await this.tokenService.generateRefreshToken(user.id, false);
+      console.log('Refresh Token:', refreshToken);
 
-      await this.auditService.log({
-        userId: user.id,
-        action: 'CLERK_LOGIN',
-        ipAddress,
-        userAgent,
-        success: true,
-      });
-
-      this.logger.log(
-        `[Clerk Verify] Authentication successful for user: ${user.id}`,
-      );
-
+      this.logger.log(`[Clerk Verify] Success for user: ${user.id}`);
+      console.log('returning', accessToken, refreshToken, user);
       return {
+        message: 'Login successful',
         success: true,
-        message: 'Clerk authentication successful',
         data: {
           accessToken,
           refreshToken,
@@ -559,20 +478,217 @@ export class AuthService {
           user: {
             id: user.id,
             username: user.username,
+            name: user.name,
             email: user.email,
-            emailVerified: (user as any).security?.emailVerified || true,
+            avatar: user.avatar,
+            emailVerified: user.security?.emailVerified ?? true,
           },
         },
       };
     } catch (error) {
+      this.logger.error('[Clerk Verify] Error:', error.message);
       if (
         error instanceof UnauthorizedException ||
         error instanceof BadRequestException
       ) {
         throw error;
       }
-      this.logger.error('[Clerk Verify] Unexpected error:', error);
-      throw new InternalServerErrorException('Failed to verify Clerk session');
+      throw new InternalServerErrorException('Clerk authentication failed');
     }
   }
+  // async verifyClerkSession(
+  //   sessionId: string,
+  //   ipAddress?: string,
+  //   userAgent?: string,
+  // ) {
+  //   try {
+  //     const session = await clerkClient.sessions.getSession(sessionId);
+  //     this.logger.log(
+  //       `[Clerk Verify] Session retrieved: ${sessionId}, status: ${session?.status}`,
+  //     );
+
+  //     if (!session || session.status !== 'active') {
+  //       this.logger.error(
+  //         `[Clerk Verify] Invalid or expired session: ${sessionId}`,
+  //       );
+  //       throw new UnauthorizedException('Invalid or expired Clerk session');
+  //     }
+
+  //     const clerkUser = await clerkClient.users.getUser(session.userId);
+  //     const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
+  //     this.logger.log(
+  //       `[Clerk Verify] Clerk user retrieved: ${clerkUser.id}, email: ${primaryEmail}`,
+  //     );
+
+  //     if (!clerkUser) {
+  //       this.logger.error(
+  //         `[Clerk Verify] Clerk user not found for session: ${sessionId}`,
+  //       );
+  //       throw new UnauthorizedException('Clerk user not found');
+  //     }
+
+  //     const fullName =
+  //       clerkUser.firstName && clerkUser.lastName
+  //         ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+  //         : clerkUser.username || primaryEmail.split('@')[0];
+
+  //     const username =
+  //       clerkUser.username ||
+  //       `${primaryEmail.split('@')[0]}_${Math.floor(1000 + Math.random() * 9000)}`;
+
+  //     let user = await this.prisma.user.findUnique({
+  //       where: { clerkId: clerkUser.id },
+  //       include: { security: true },
+  //     });
+
+  //     if (user) {
+  //       this.logger.log(
+  //         `[Clerk Verify] User found in database after ${retryCount} retries (${retryCount * retryDelay}ms)`,
+  //       );
+  //       break;
+  //     }
+
+  //     retryCount++;
+  //     this.logger.log(
+  //       `[Clerk Verify] User not found, retry ${retryCount}/${maxRetries}...`,
+  //       );
+
+  //       await new Promise((resolve) => setTimeout(resolve, retryDelay));
+  //     }
+  //     if (!user) {
+  //       this.logger.warn(
+  //         `[Clerk Verify] User not found after ${maxRetries} retries. Creating user directly as fallback.`,
+  //       );
+
+  //       const primaryEmail = clerkUser.emailAddresses[0]?.emailAddress;
+
+  //       if (!primaryEmail) {
+  //         this.logger.error(
+  //           `[Clerk Verify] No email address found for Clerk user: ${clerkUser.id}`,
+  //         );
+  //         throw new BadRequestException(
+  //           'No email address associated with Clerk account',
+  //         );
+  //       }
+
+  //       const fullName =
+  //         clerkUser.firstName && clerkUser.lastName
+  //           ? `${clerkUser.firstName} ${clerkUser.lastName}`.trim()
+  //           : clerkUser.username || primaryEmail.split('@')[0];
+
+  //       const username =
+  //         clerkUser.username || primaryEmail.split('@')[0] + '_clerk';
+
+  //       user = await this.prisma.$transaction(async (tx) => {
+  //         const newUser = await tx.user.upsert({
+  //           where: { email: primaryEmail },
+  //           update: {
+  //             clerkId: clerkUser.id,
+  //             name: fullName,
+  //             avatar: clerkUser.imageUrl,
+  //           },
+  //           create: {
+  //             clerkId: clerkUser.id,
+  //             email: primaryEmail,
+  //             name: fullName,
+  //             username: username,
+  //             avatar: clerkUser.imageUrl,
+  //             isActive: true,
+  //           },
+  //         });
+
+  //         const existingSecurity = await tx.userSecurity.findUnique({
+  //           where: { userId: newUser.id },
+  //         });
+
+  //         if (!existingSecurity) {
+  //           await tx.userSecurity.create({
+  //             data: {
+  //               userId: newUser.id,
+  //               password: '',
+  //               emailVerified: true,
+  //               emailVerificationToken: null,
+  //               emailVerificationExpires: null,
+  //             },
+  //           });
+  //         } else {
+  //           await tx.userSecurity.update({
+  //             where: { userId: newUser.id },
+  //             data: {
+  //               emailVerified: true,
+  //             },
+  //           });
+  //         }
+
+  //         return tx.user.findUnique({
+  //           where: { id: newUser.id },
+  //           include: { security: true },
+  //         });
+  //       });
+
+  //       this.logger.log(
+  //         `[Clerk Verify] Fallback user creation successful: ${user?.id}`,
+  //       );
+  //     }
+
+  //     if (!user) {
+  //       throw new InternalServerErrorException(
+  //         'Failed to create or retrieve user',
+  //       );
+  //     }
+
+  //     if (!user.isActive) {
+  //       this.logger.error(
+  //         `[Clerk Verify] User account is inactive: ${user.id}`,
+  //       );
+  //       throw new UnauthorizedException('Account is inactive');
+  //     }
+
+  //     const accessToken = this.tokenService.generateAccessToken({
+  //       userId: user.id,
+  //       username: user.username,
+  //       email: user.email,
+  //     });
+
+  //     const { token: refreshToken, expiresInMs } =
+  //       await this.tokenService.generateRefreshToken(user.id, false);
+
+  //     await this.auditService.log({
+  //       userId: user.id,
+  //       action: 'CLERK_LOGIN',
+  //       ipAddress,
+  //       userAgent,
+  //       success: true,
+  //     });
+
+  //     this.logger.log(
+  //       `[Clerk Verify] Authentication successful for user: ${user.id}`,
+  //     );
+
+  //     return {
+  //       success: true,
+  //       message: 'Clerk authentication successful',
+  //       data: {
+  //         accessToken,
+  //         refreshToken,
+  //         expiresInMs,
+  //         user: {
+  //           id: user.id,
+  //           username: user.username,
+  //           email: user.email,
+  //           emailVerified: (user as any).security?.emailVerified || true,
+  //         },
+  //       },
+  //     };
+  //   } catch (error) {
+  //     if (
+  //       error instanceof UnauthorizedException ||
+  //       error instanceof BadRequestException
+  //     ) {
+  //       throw error;
+  //     }
+  //     this.logger.error('[Clerk Verify] Unexpected error:', error);
+  //     throw new InternalServerErrorException('Failed to verify Clerk session');
+  //   }
+  // }
 }

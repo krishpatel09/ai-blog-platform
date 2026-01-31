@@ -25,11 +25,15 @@ import { CookieInterceptor } from '../common/interceptors/cookie.interceptor';
 @Controller('auth')
 @UseInterceptors(CookieInterceptor)
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(private authService: AuthService) {}
 
   @Public()
   @Post('signup')
-  async signup(@Body() dto: SignupDto, @ClientIp() ip: string, @Headers('user-agent') userAgent: string) {
+  async signup(
+    @Body() dto: SignupDto,
+    @ClientIp() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
     return this.authService.signup(dto, ip, userAgent);
   }
 
@@ -51,17 +55,22 @@ export class AuthController {
     @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
-    return this.authService.logout(req.user.id, req.cookies.refreshToken, ip, userAgent);
+    return this.authService.logout(
+      req.user.id,
+      req.cookies.refreshToken,
+      ip,
+      userAgent,
+    );
   }
 
   @UseGuards(RefreshTokenGuard)
   @Post('refresh-token')
-  async refresh(
-    @Body() dto: RefreshTokenDto,
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-  ) {
-    return this.authService.refreshToken(dto, ip, userAgent);
+  async refresh(@Req() req: any) {
+    const dto: RefreshTokenDto = {
+      refreshToken: req.user.refreshToken,
+    };
+    console.log('Backend: Refreshing token for user:', req.user.id);
+    return this.authService.refreshToken(dto);
   }
 
   @Public()
@@ -76,9 +85,16 @@ export class AuthController {
 
   @Public()
   @Post('resend-verification')
-  async resendVerification(@Body() dto: ResendVerificationDto, @ClientIp() ipAddress: string, @Headers('user-agent') userAgent: string,
+  async resendVerification(
+    @Body() dto: ResendVerificationDto,
+    @ClientIp() ipAddress: string,
+    @Headers('user-agent') userAgent: string,
   ) {
-    return this.authService.resendVerificationEmail(dto.email, ipAddress, userAgent);
+    return this.authService.resendVerificationEmail(
+      dto.email,
+      ipAddress,
+      userAgent,
+    );
   }
 
   @Public()

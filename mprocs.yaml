@@ -1,0 +1,16 @@
+procs:
+  backend:
+    cwd: back-end
+    start: true
+    cmd:
+      - cmd
+      - /c
+      - npm run start:dev
+
+  frontend:
+    cwd: front-end
+    start: true
+    cmd:
+      - cmd
+      - /c
+      - npm run dev

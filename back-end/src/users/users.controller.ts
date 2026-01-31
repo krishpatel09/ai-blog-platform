@@ -1,4 +1,13 @@
-import { Controller, Get, Patch, Body, UseGuards, Post, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Body,
+  UseGuards,
+  Post,
+  Headers,
+  Param,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { EmailVerifiedGuard } from '../auth/guards/email-verified.guard';
@@ -13,15 +22,21 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { Public } from '../common/decorators/public.decorator';
 import { ClientIp } from '../common/decorators/ip.decorator';
 
-
 @UseGuards(JwtAuthGuard, EmailVerifiedGuard)
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) { }
+  constructor(private readonly usersService: UsersService) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get('me')
   getProfile(@CurrentUser() user: CurrentUserType) {
     return this.usersService.getProfile(user.userId);
+  }
+
+  @Public()
+  @Get('@:username')
+  getPublicProfile(@Param('username') username: string) {
+    return this.usersService.getPublicProfileByUsername(username);
   }
 
   @Patch('update-profile')

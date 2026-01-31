@@ -20,9 +20,9 @@ export class UsersService {
     private auditService: AuditService,
     private tokenService: TokenService,
     private emailService: EmailService,
-  ) { }
+  ) {}
 
-  // Get user profile
+  //Get user profile
   async getProfile(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -52,6 +52,27 @@ export class UsersService {
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
+  }
+
+  // Get public profile by username
+  async getPublicProfileByUsername(username: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { username },
+      select: {
+        id: true,
+        username: true,
+        name: true,
+        avatar: true,
+        bio: true,
+        email: true,
+        createdAt: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return user;
   }
 
   //Update profile
@@ -129,7 +150,11 @@ export class UsersService {
     });
   }
 
-  async forgotPassword(dto: ForgotPasswordDto, ipAddress?: string, userAgent?: string) {
+  async forgotPassword(
+    dto: ForgotPasswordDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const { email } = dto;
 
     const user = await this.prisma.user.findUnique({
@@ -144,7 +169,8 @@ export class UsersService {
       };
     }
 
-    const { token, expiresAt } = this.tokenService.generateEmailVerificationToken();
+    const { token, expiresAt } =
+      this.tokenService.generateEmailVerificationToken();
 
     await this.prisma.userSecurity.update({
       where: { userId: user.id },
@@ -154,11 +180,9 @@ export class UsersService {
       },
     });
 
-    await this.emailService.sendPasswordResetEmail(
-      user.email,
-      user.username,
-      token,
-    ).catch(err => console.error('Password reset email failed:', err));
+    await this.emailService
+      .sendPasswordResetEmail(user.email, user.username, token)
+      .catch((err) => console.error('Password reset email failed:', err));
 
     // Log audit event
     await this.auditService.log({
@@ -175,9 +199,12 @@ export class UsersService {
     };
   }
 
-  async resetPassword(dto: ResetPasswordDto, ipAddress?: string, userAgent?: string) {
+  async resetPassword(
+    dto: ResetPasswordDto,
+    ipAddress?: string,
+    userAgent?: string,
+  ) {
     const { token, password, confirmPassword } = dto;
-
 
     const userSecurity = await this.prisma.userSecurity.findFirst({
       where: { emailVerificationToken: token },
@@ -190,7 +217,9 @@ export class UsersService {
 
     const now = new Date();
     if (userSecurity.resetExpires && now > userSecurity.resetExpires) {
-      throw new BadRequestException('Reset token has expired. Please request a new one.');
+      throw new BadRequestException(
+        'Reset token has expired. Please request a new one.',
+      );
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);

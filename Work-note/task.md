@@ -4,9 +4,14 @@
 4.check the cache-chunk data- tanstack query
 5.email in tradmark check karva
 6.ip addrsss check this
+7.library/list in create this route
 
-# most important task
+1.follwer implement then blogcard in more option check now
 
-- implmement the editor
-- image upload to content geneare
-- back-end create api in create-blog
+# tommorow task
+
+http://localhost:3000/library
+http://localhost:3000/library/list/{listname}
+http://localhost:3000/library/
+
+1.bookmark in list public in create this
