@@ -9,6 +9,8 @@ import React, {
   useMemo,
 } from "react";
 import TokenService, { User } from "@/services/api/Tokenservice";
+import axiosInstance from "@/services/api/axiosInstance"; // Import for API calls
+import { API_PATH } from "@/services/api/Apipath"; // Import API paths
 
 interface AuthContextType {
   user: User | null;
@@ -26,11 +28,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const initAuth = () => {
+    const initAuth = async () => {
       try {
         const storedUser = TokenService.getUser();
-        if (storedUser) {
+        const storedToken = TokenService.getLocalAccessToken();
+
+        if (storedUser && storedToken) {
+          // Optimistically set user from local storage
           setUser(storedUser);
+
+          // Background sync: Fetch fresh profile from backend to ensure data (like bio) is up-to-date
+          try {
+            const response = await axiosInstance.get(
+              API_PATH.USERS.GET_PROFILE,
+            );
+            if (response.data) {
+              // Merge stored user with fresh data from backend
+              const freshUser = { ...storedUser, ...response.data };
+              setUser(freshUser);
+              TokenService.setUser(freshUser, storedToken);
+            }
+          } catch (syncError) {
+            console.error("Background sync failed:", syncError);
+            // If sync fails (e.g., 401), we might want to logout, but let's be conservative for now
+          }
         }
       } catch (error) {
         console.error("Failed to load user session:", error);

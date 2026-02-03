@@ -103,15 +103,6 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
                   </div>
                 </Link>
               ))}
-
-              {/* Find Writers Link */}
-              <div className="flex flex-col mt-4 ml-2 gap-3">
-                <div className="flex items-start gap-3 cursor-pointer group">
-                  <div className="w-5 h-5 flex items-center justify-center shrink-0 text-gray-500 group-hover:text-gray-900">
-                    <Plus size={20} strokeWidth={1.5} />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}

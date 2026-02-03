@@ -96,14 +96,4 @@ export class AuthController {
       userAgent,
     );
   }
-
-  @Public()
-  @Post('clerk-verify')
-  async clerkVerify(
-    @Body() body: { sessionId: string },
-    @ClientIp() ip: string,
-    @Headers('user-agent') userAgent: string,
-  ) {
-    return this.authService.verifyClerkSession(body.sessionId, ip, userAgent);
-  }
 }

@@ -163,7 +163,7 @@ export default function UserProfilePage() {
       {/* Edit / Follow Button */}
       <div className="mt-2">
         {isOwnProfile ? (
-          <Link href="/settings" className="text-green-600 hover:underline">
+          <Link href="/me/settings" className="text-green-600 hover:underline">
             Edit profile
           </Link>
         ) : authUser ? (

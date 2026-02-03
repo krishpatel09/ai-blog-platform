@@ -78,11 +78,26 @@ axiosInstance.interceptors.response.use(
             withCredentials: true,
           },
         );
-        console.log("[Axios] Refresh successful", response.data);
-        const accessToken =
-          response.data?.accessToken || response.data?.data?.accessToken;
 
-        if (!accessToken) throw new Error("No access token received");
+        console.log("[Axios] Refresh response received:", response.status);
+
+        // EXTRACTION: The backend wraps the response.
+        // We need to look for 'accessToken' inside 'data.data' or directly in 'data' depending on wrapper.
+        // Based on backend: { success: true, data: { accessToken: "..." } }
+        const accessToken =
+          response.data?.data?.accessToken || response.data?.accessToken;
+
+        if (!accessToken) {
+          console.error(
+            "[Axios] Access token missing in refresh response:",
+            response.data,
+          );
+          throw new Error("No access token received from backend");
+        }
+
+        console.log(
+          "[Axios] Token refreshed successfully. Retrying original request...",
+        );
 
         Tokenservice.updateLocalAccessToken(accessToken);
         processQueue(null, accessToken);

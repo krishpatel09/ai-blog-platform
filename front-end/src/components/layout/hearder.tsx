@@ -66,7 +66,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
       showSuccess("Signed out successfully");
 
       router.replace("/sign-in");
-      window.location.reload();
     } catch (error) {
       console.error("Logout failed:", error);
       dismiss(toastId);
@@ -74,7 +73,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
 
       Tokenservice.removeUser();
       router.replace("/sign-in");
-      window.location.reload();
     } finally {
       setIsLoggingOut(false);
     }
