@@ -15,12 +15,14 @@ interface LibraryListCardProps {
     username?: string;
   };
   className?: string;
+  customLink?: string;
 }
 
 export default function LibraryListCard({
   list,
   author,
   className,
+  customLink,
 }: LibraryListCardProps) {
   const { user } = useAuth();
 
@@ -28,11 +30,12 @@ export default function LibraryListCard({
   const userAvatar = displayUser?.avatar || displayUser?.image;
   const userName = displayUser?.name || "User";
 
-  // Get up to 3 cover images from the list items for the preview
   const coverImages = list.items
     .map((item) => item.post?.coverImage)
     .filter(Boolean)
     .slice(0, 3);
+
+  const href = customLink || `/me/library/${list.id}`;
 
   return (
     <div
@@ -65,7 +68,7 @@ export default function LibraryListCard({
             </span>
           </div>
 
-          <Link href={`/library/list/${list.id}`}>
+          <Link href={href}>
             <h3 className="text-2xl font-bold text-gray-900 mb-2 group-hover:text-black line-clamp-2">
               {list.name}
             </h3>
@@ -73,6 +76,7 @@ export default function LibraryListCard({
 
           <div className="flex items-center gap-3 text-sm text-gray-500 mt-2">
             <span>{list._count?.items || list.items?.length || 0} stories</span>
+            {list.isPrivate && <Lock className="w-4 h-4 text-gray-500 " />}
           </div>
         </div>
       </div>

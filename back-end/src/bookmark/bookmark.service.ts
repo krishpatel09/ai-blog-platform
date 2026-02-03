@@ -12,25 +12,27 @@ export class BookmarkService {
   constructor(private prisma: PrismaService) {}
 
   async ensureDefaultListExists(userId: string) {
-    const defaultList = await this.prisma.bookmarkList.findUnique({
-      where: {
-        userId_name: {
-          userId,
-          name: 'Reading List',
-        },
+    return this.prisma.bookmarkList.upsert({
+      where: { userId_name: { userId, name: 'Reading List' } },
+      update: {},
+      create: {
+        name: 'Reading List',
+        userId,
+        isPrivate: true,
       },
     });
+  }
 
-    if (!defaultList) {
-      return this.prisma.bookmarkList.create({
-        data: {
-          name: 'Reading List',
-          userId,
+  private getCommonIncludes() {
+    return {
+      _count: { select: { items: true } },
+      items: {
+        orderBy: { order: 'asc' as const },
+        include: {
+          post: { select: { id: true, slug: true, coverImage: true } },
         },
-      });
-    }
-
-    return defaultList;
+      },
+    };
   }
 
   //create list
@@ -38,7 +40,7 @@ export class BookmarkService {
     userId: string,
     createBookmarkListDto: CreateBookmarkListDto,
   ) {
-    const { name } = createBookmarkListDto;
+    const { name, isPrivate } = createBookmarkListDto;
 
     const existing = await this.prisma.bookmarkList.findUnique({
       where: {
@@ -58,6 +60,7 @@ export class BookmarkService {
       data: {
         userId,
         name,
+        isPrivate: isPrivate ?? false,
       },
     });
   }
@@ -66,33 +69,15 @@ export class BookmarkService {
   async getLists(userId: string) {
     await this.ensureDefaultListExists(userId);
 
-    const lists = await this.prisma.bookmarkList.findMany({
+    return this.prisma.bookmarkList.findMany({
       where: { userId },
-      include: {
-        _count: {
-          select: { items: true },
-        },
-        items: {
-          orderBy: { createdAt: 'desc' },
-          include: {
-            post: {
-              select: {
-                id: true,
-                slug: true,
-                coverImage: true,
-              },
-            },
-          },
-        },
-      },
+      include: this.getCommonIncludes(),
       orderBy: { createdAt: 'asc' },
     });
-
-    return lists;
   }
 
   // Get public lists by username
-  async findPublicListsByUsername(username: string) {
+  async findPublicListsByUsername(username: string, currentUserId?: string) {
     console.log('Finding public lists for user:', username);
     const user = await this.prisma.user.findUnique({
       where: { username },
@@ -101,25 +86,11 @@ export class BookmarkService {
     if (!user) {
       throw new NotFoundException('User not found');
     }
+    const isOwner = currentUserId === user.id;
 
     return this.prisma.bookmarkList.findMany({
-      where: { userId: user.id },
-      include: {
-        _count: {
-          select: { items: true },
-        },
-        items: {
-          orderBy: { createdAt: 'desc' },
-          take: 4,
-          include: {
-            post: {
-              select: {
-                coverImage: true,
-              },
-            },
-          },
-        },
-      },
+      where: { userId: user.id, ...(isOwner ? {} : { isPrivate: false }) },
+      include: this.getCommonIncludes(),
       orderBy: { createdAt: 'desc' },
     });
   }
@@ -129,7 +100,7 @@ export class BookmarkService {
       where: { id: listId, userId },
       include: {
         items: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { order: 'asc' },
           include: {
             post: {
               select: {
@@ -147,6 +118,8 @@ export class BookmarkService {
                     avatar: true,
                   },
                 },
+                likeCount: true,
+                commentCount: true,
               },
             },
           },
@@ -161,6 +134,50 @@ export class BookmarkService {
     return list;
   }
 
+  async updateList(
+    userId: string,
+    listId: string,
+    updateListDto: { name?: string; isPrivate?: boolean },
+  ) {
+    const list = await this.prisma.bookmarkList.findUnique({
+      where: { id: listId, userId },
+    });
+
+    if (!list) {
+      throw new NotFoundException('Bookmark list not found');
+    }
+
+    return this.prisma.bookmarkList.update({
+      where: { id: listId },
+      data: {
+        ...(updateListDto.name && { name: updateListDto.name }),
+        ...(updateListDto.isPrivate !== undefined && {
+          isPrivate: updateListDto.isPrivate,
+        }),
+      },
+    });
+  }
+
+  async deleteList(userId: string, listId: string) {
+    const list = await this.prisma.bookmarkList.findUnique({
+      where: { id: listId, userId },
+    });
+
+    if (!list) {
+      throw new NotFoundException('Bookmark list not found');
+    }
+
+    if (list.name === 'Reading List') {
+      // Prevent deleting the default reading list if desired, or allow it.
+      // Usually default lists are protected.
+      throw new ConflictException('Cannot delete the default Reading List');
+    }
+
+    return this.prisma.bookmarkList.delete({
+      where: { id: listId },
+    });
+  }
+
   async addItem(
     userId: string,
     listId: string,
@@ -169,6 +186,12 @@ export class BookmarkService {
     // Verify list ownership
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },
+      include: {
+        items: {
+          orderBy: { order: 'desc' },
+          take: 1,
+        },
+      },
     });
 
     if (!list) {
@@ -189,11 +212,14 @@ export class BookmarkService {
       throw new ConflictException('Post already in this list');
     }
 
-    // Transaction to add item and update counts if necessary (though count is dynamic)
+    // Calculate next order
+    const nextOrder = list.items.length > 0 ? list.items[0].order + 1 : 0;
+
     return this.prisma.bookmarkItem.create({
       data: {
         listId,
         postId: addItemDto.postId,
+        order: nextOrder,
       },
     });
   }
@@ -207,8 +233,6 @@ export class BookmarkService {
       throw new NotFoundException('Bookmark list not found');
     }
 
-    // Handling case where item doesn't exist? Prisma delete throws if not found usually or we use deleteMany
-    // deleteMany returns count, delete throws
     try {
       return await this.prisma.bookmarkItem.delete({
         where: {
@@ -224,5 +248,33 @@ export class BookmarkService {
       }
       throw error;
     }
+  }
+
+  async reorderItems(userId: string, listId: string, postIds: string[]) {
+    // Verify list ownership
+    const list = await this.prisma.bookmarkList.findUnique({
+      where: { id: listId, userId },
+    });
+
+    if (!list) {
+      throw new NotFoundException('Bookmark list not found');
+    }
+
+    // Use transaction to update all items
+    const updates = postIds.map((postId, index) =>
+      this.prisma.bookmarkItem.update({
+        where: {
+          listId_postId: {
+            listId,
+            postId,
+          },
+        },
+        data: {
+          order: index,
+        },
+      }),
+    );
+
+    return this.prisma.$transaction(updates);
   }
 }

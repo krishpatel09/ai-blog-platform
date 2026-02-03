@@ -42,6 +42,7 @@ export default function BlogInteractionBar({ blog }: BlogInteractionBarProps) {
   const [newListName, setNewListName] = useState("");
   const [isCreatingList, setIsCreatingList] = useState(false);
   const [showCreateInput, setShowCreateInput] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
 
   const { user } = useAuth();
   const router = useRouter();
@@ -266,6 +267,17 @@ export default function BlogInteractionBar({ blog }: BlogInteractionBarProps) {
                         onClick={(e) => e.stopPropagation()}
                         autoFocus
                       />
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isPrivate || false}
+                          onChange={(e) => setIsPrivate(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-black focus:ring-black accent-black"
+                        />
+                        <span className="text-sm text-gray-700 flex-1 truncate">
+                          Make it private
+                        </span>
+                      </div>
                       <div className="flex gap-2">
                         <Button
                           size="sm"

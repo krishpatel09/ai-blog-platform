@@ -209,17 +209,12 @@ export class AuthService {
       );
       console.log('Old refresh token validated', oldRefreshToken.id);
 
-      // Determine if 'rememberMe' was used based on the token's original lifespan
-      // standard is 1 day (approx 86400000ms), remembered is 7 days
       const duration =
         oldRefreshToken.expiresAt.getTime() -
         oldRefreshToken.createdAt.getTime();
-      const rememberMe = duration > 24 * 60 * 60 * 1000 * 1.5; // > 36 hours implies 7 days
+      const rememberMe = duration > 24 * 60 * 60 * 1000 * 1.5;
 
-      // Delete the old refresh token (Rotation)
       await this.tokenService.deleteRefreshToken(dto.refreshToken);
-
-      // Generate new access token
       const accessToken = this.tokenService.generateAccessToken({
         userId: oldRefreshToken.user.id,
         username: oldRefreshToken.user.username,
@@ -238,12 +233,23 @@ export class AuthService {
         oldRefreshToken.user.id,
       );
 
+      await this.auditService.log({
+        userId: oldRefreshToken.user.id,
+        action: 'REFRESH_TOKEN',
+        success: true,
+        details: {
+          oldRefreshTokenId: oldRefreshToken.id,
+          newRefreshTokenId: refreshToken,
+          expiresInMs,
+        },
+      });
+
       return {
         message: 'Token refreshed successfully',
         success: true,
         data: {
           accessToken,
-          refreshToken, // Important: Return this so CookieInterceptor can set the new cookie
+          refreshToken,
           expiresInMs,
         },
       };
@@ -251,6 +257,7 @@ export class AuthService {
       if (error instanceof UnauthorizedException) {
         throw error;
       }
+
       console.error('Refresh Token Error:', error);
       throw new InternalServerErrorException('Internal server error');
     }

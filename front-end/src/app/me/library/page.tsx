@@ -16,6 +16,7 @@ import Image from "next/image";
 import Link from "next/link";
 import bookmarkService from "@/services/bookmark.service";
 import LibraryLists from "@/components/my-library/LibraryLists";
+import RecentlyRead from "@/components/my-library/RecentlyRead";
 
 // Mock saved blogs
 const savedBlogs: Blog[] = [
@@ -91,7 +92,7 @@ export default function LibraryPage() {
               New list
             </button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden">
+          <DialogContent className="sm:max-w-[500px] p-0 gap-0 overflow-hidden bg-white">
             <div className="p-10 flex flex-col items-center text-center">
               <DialogHeader className="mb-6">
                 <DialogTitle className="text-2xl font-bold">
@@ -112,20 +113,6 @@ export default function LibraryPage() {
                     {listName.length}/60
                   </div>
                 </div>
-
-                {!showDescription ? (
-                  <button
-                    onClick={() => setShowDescription(true)}
-                    className="text-green-600 text-sm hover:text-green-700 font-medium"
-                  >
-                    Add a description
-                  </button>
-                ) : (
-                  <textarea
-                    placeholder="Description"
-                    className="w-full bg-gray-50 border-b border-gray-300 px-3 py-2 outline-none focus:border-gray-900 transition-colors resize-none placeholder:text-gray-500 min-h-[80px]"
-                  />
-                )}
 
                 <div className="flex items-center gap-3">
                   <input
@@ -260,14 +247,17 @@ export default function LibraryPage() {
             </div>
           ) : (
             <div className="text-center py-16">
-              <p className="text-gray-500">
-                {activeTab === "highlights" &&
-                  "Your highlights will appear here."}
-                {activeTab === "reading-history" &&
-                  "Stories you have read recently."}
-                {activeTab === "responses" &&
-                  "Your responses to other stories."}
-              </p>
+              {activeTab === "highlights" && (
+                <p className="text-gray-500">
+                  Your highlights will appear here.
+                </p>
+              )}
+              {activeTab === "reading-history" && <RecentlyRead />}
+              {activeTab === "responses" && (
+                <p className="text-gray-500">
+                  Your responses to other stories.
+                </p>
+              )}
             </div>
           )}
         </div>

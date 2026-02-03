@@ -6,6 +6,7 @@
 -Reading history
 -Responses
 4.profile in list in ui same view your librart type
+=list route create this
 5.profile in aboute page check
 6.stories in check three dots
 7.stats page check

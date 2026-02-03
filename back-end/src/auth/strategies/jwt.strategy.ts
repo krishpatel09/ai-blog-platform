@@ -33,9 +33,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   async validate(req: Request, payload: JwtPayload) {
     const token = ExtractJwt.fromAuthHeaderAsBearerToken()(req);
 
-    if (token && (await this.tokenService.revokeRefreshToken(token))) {
-      throw new UnauthorizedException('Token has been revoked');
-    }
+    // Access tokens are stateless, so we don't check against the DB for revocation here.
+    // Logic for blacklisting would go here but required a different DB schema.
 
     const user = await this.prisma.user.findUnique({
       where: { id: payload.userId },

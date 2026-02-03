@@ -29,11 +29,14 @@ export class BookmarkController {
     return this.bookmarkService.getLists(req.user.id);
   }
 
-  // Public endpoint to get lists by username
   @Public()
+  @UseGuards(JwtAuthGuard)
   @Get('user/@:username')
-  getUserLists(@Param('username') username: string) {
-    return this.bookmarkService.findPublicListsByUsername(username);
+  getUserLists(@Param('username') username: string, @Req() req) {
+    return this.bookmarkService.findPublicListsByUsername(
+      username,
+      req.user?.id,
+    );
   }
 
   @Get('get-list-details/:id')
@@ -61,5 +64,28 @@ export class BookmarkController {
     @Param('postId') postId: string,
   ) {
     return this.bookmarkService.removeItem(req.user.id, listId, postId);
+  }
+
+  @Post('update-list/:id') // Using Post for patch behavior if preferred, or Patch
+  updateList(
+    @Req() req,
+    @Param('id') listId: string,
+    @Body() updateListDto: { name?: string; isPrivate?: boolean },
+  ) {
+    return this.bookmarkService.updateList(req.user.id, listId, updateListDto);
+  }
+
+  @Delete('delete-list/:id')
+  deleteList(@Req() req, @Param('id') listId: string) {
+    return this.bookmarkService.deleteList(req.user.id, listId);
+  }
+
+  @Post('reorder-items/:id')
+  reorderItems(
+    @Req() req,
+    @Param('id') listId: string,
+    @Body() body: { postIds: string[] },
+  ) {
+    return this.bookmarkService.reorderItems(req.user.id, listId, body.postIds);
   }
 }

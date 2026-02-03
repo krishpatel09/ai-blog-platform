@@ -13,6 +13,7 @@ import {
   Ellipsis,
   Flag,
   VolumeX,
+  Trash2,
 } from "lucide-react";
 import { ActionTooltip } from "@/components/shared/ActionTooltip";
 import {
@@ -57,7 +58,7 @@ const extractTextFromNode = (node: any): string => {
   return "";
 };
 
-export default function BlogCard({ blog }: BlogCardProps) {
+export default function BlogCard({ blog, onRemove }: BlogCardProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isBookmarkOpen, setIsBookmarkOpen] = useState(false);
   const [bookmarkLists, setBookmarkLists] = useState<any[]>([]);
@@ -224,7 +225,7 @@ export default function BlogCard({ blog }: BlogCardProps) {
               className="flex items-center gap-2 group/author z-10 relative w-fit"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="relative w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden shadow-sm">
+              <div className="relative w-6 h-6 rounded-full bg-linear-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-bold overflow-hidden shadow-sm">
                 {blog.author.avatar ? (
                   <Image
                     src={blog.author.avatar!}
@@ -248,11 +249,11 @@ export default function BlogCard({ blog }: BlogCardProps) {
             className="cursor-pointer block group/post"
           >
             {/* Title */}
-            <h2 className="text-xl md:text-[22px] font-bold text-gray-900 group-hover/post:text-gray-600 line-clamp-2 mb-2 leading-tight tracking-tight transition-colors">
+            <h2 className="text-xl md:text-[22px] font-bold text-gray-900 group-hover/post:text-gray-600 line-clamp-2 mb-2 leading-tight tracking-tight transition-colors text-left">
               {blog.title}
             </h2>
             {/* Excerpt */}
-            <p className="text-gray-600 line-clamp-2 mb-4 text-sm md:text-base leading-relaxed font-serif">
+            <p className="text-gray-600 line-clamp-2 mb-4 text-sm md:text-base leading-relaxed font-serif text-left">
               {previewText}
             </p>
           </Link>
@@ -301,6 +302,21 @@ export default function BlogCard({ blog }: BlogCardProps) {
 
             {/* Right Side: Actions */}
             <div className="flex items-center gap-2">
+              {onRemove && (
+                <ActionTooltip content="Remove from history">
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      onRemove();
+                    }}
+                    className="h-8 w-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </ActionTooltip>
+              )}
+
               <ActionTooltip content="Save">
                 <Link
                   href={`/@${blog.author.username}/${blog.slug}`}

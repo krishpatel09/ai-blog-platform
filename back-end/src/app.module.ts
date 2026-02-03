@@ -19,6 +19,7 @@ import { BookmarkModule } from './bookmark/bookmark.module';
 import { UserFollowModule } from './userFollow/userfollow.module';
 import { CommentModule } from './comments/comment.module';
 import { StoriesModule } from './stories/stories.module';
+import { HistoryModule } from './history/history.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { StoriesModule } from './stories/stories.module';
     UserFollowModule,
     CommentModule,
     StoriesModule,
+    HistoryModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

@@ -41,4 +41,4 @@ import { RefreshJwtStrategy } from './strategies/refresh-jwt.strategy';
   ],
   exports: [TokenService, EmailService, AuditService],
 })
-export class AuthModule { }
+export class AuthModule {}

@@ -36,6 +36,7 @@ export interface Blog {
 export interface BlogCardProps {
   blog: Blog;
   variant?: "default" | "compact";
+  onRemove?: () => void;
 }
 
 export interface StatsData {

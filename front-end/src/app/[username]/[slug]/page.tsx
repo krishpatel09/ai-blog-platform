@@ -12,16 +12,19 @@ import Header from "@/components/layout/hearder";
 import BlogInteractionBar from "@/components/shared/BlogInteractionBar";
 import { useAuth } from "@/context/AuthContext";
 import FollowUserButton from "@/components/shared/FollowUserButton";
+import { useReadingHistory } from "@/hooks/useReadingHistory";
 
 export default function BlogDetailPage() {
   const params = useParams();
   const slugParam = params.slug as string;
-  const { user } = useAuth(); // Check auth status
+  const { user } = useAuth();
 
   const [blog, setBlog] = useState<Blog | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isJoined, setIsJoined] = useState(false);
+
+  useReadingHistory(blog?.id || "");
 
   useEffect(() => {
     const fetchBlog = async () => {

@@ -49,28 +49,40 @@ axiosInstance.interceptors.response.use(
   async (error: AxiosError) => {
     const originalConfig = error.config as CustomAxiosRequestConfig;
 
-    if (originalConfig.headers["X-Skip-Interceptor"]) {
+    if (
+      originalConfig &&
+      originalConfig.headers &&
+      originalConfig.headers["X-Skip-Interceptor"]
+    ) {
       return Promise.reject(error);
     }
 
     if (error.response?.status === 401 && !originalConfig._retry) {
       console.log("[Axios] 401 detected, attempting refresh...");
+
       if (isRefreshing) {
         console.log("[Axios] Refresh already in progress, queuing request");
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         })
           .then((token) => {
-            originalConfig.headers["Authorization"] = `Bearer ${token}`;
+            if (originalConfig.headers) {
+              originalConfig.headers["Authorization"] = `Bearer ${token}`;
+            }
             return axiosInstance(originalConfig);
           })
           .catch((err) => Promise.reject(err));
       }
+
       originalConfig._retry = true;
       isRefreshing = true;
 
       try {
         console.log("[Axios] Calling refresh endpoint...");
+        // We must use a generic axios instance or the same instance but ensure we don't loop.
+        // Since the refresh endpoint is properly excluded or we can rely on path check,
+        // strictly using 'withCredentials: true' is key.
+        // IMPORTANT: The path to refresh token must match the backend.
         const response = await axios.post(
           `${URL}${API_PATH.AUTH.REFRESH_TOKEN}`,
           {},
@@ -81,34 +93,37 @@ axiosInstance.interceptors.response.use(
 
         console.log("[Axios] Refresh response received:", response.status);
 
-        // EXTRACTION: The backend wraps the response.
-        // We need to look for 'accessToken' inside 'data.data' or directly in 'data' depending on wrapper.
-        // Based on backend: { success: true, data: { accessToken: "..." } }
-        const accessToken =
-          response.data?.data?.accessToken || response.data?.accessToken;
+        // EXTRACTION logic based on backend response structure:
+        // Backend returns: { success: true, data: { accessToken: "..." } }
+        const accessToken = response.data?.data?.accessToken;
 
         if (!accessToken) {
-          console.error(
-            "[Axios] Access token missing in refresh response:",
-            response.data,
-          );
           throw new Error("No access token received from backend");
         }
 
-        console.log(
-          "[Axios] Token refreshed successfully. Retrying original request...",
-        );
+        console.log("[Axios] Token refreshed successfully. Retrying queue...");
 
         Tokenservice.updateLocalAccessToken(accessToken);
+
+        // Update header for the original request
+        if (originalConfig.headers) {
+          originalConfig.headers["Authorization"] = `Bearer ${accessToken}`;
+        }
+
+        // Process the queue
         processQueue(null, accessToken);
 
-        originalConfig.headers["Authorization"] = `Bearer ${accessToken}`;
         return axiosInstance(originalConfig);
       } catch (refreshError: any) {
         console.error("[Axios] Refresh failed:", refreshError);
         processQueue(refreshError, null);
         Tokenservice.removeUser();
-        if (typeof window !== "undefined") {
+        // Ideally use a router push if accessible, or window.location as fallback
+        if (
+          typeof window !== "undefined" &&
+          !window.location.pathname.includes("/sign-in")
+        ) {
+          // Only redirect if not already there to avoid loose loops (though auth pages should be public)
           window.location.href = "/sign-in";
         }
         return Promise.reject(refreshError);
@@ -116,6 +131,7 @@ axiosInstance.interceptors.response.use(
         isRefreshing = false;
       }
     }
+
     return Promise.reject(error);
   },
 );

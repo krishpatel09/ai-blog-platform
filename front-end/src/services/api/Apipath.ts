@@ -38,6 +38,9 @@ export const API_PATH = {
     GET_LIST_DETAILS: "/api/bookmarks/get-list-details",
     ADD_ITEM: "/api/bookmarks/add-item",
     REMOVE_ITEM: "/api/bookmarks/remove-item",
+    UPDATE_LIST: "/api/bookmarks/update-list",
+    REORDER_ITEMS: "/api/bookmarks/reorder-items",
+    DELETE_LIST: "/api/bookmarks/delete-list",
   },
   FOLLOW: {
     FOLLOW: "/api/users/follow",
@@ -63,5 +66,11 @@ export const API_PATH = {
     MARK_READ: "/api/notifications/read", // :id/read handled in service
     MARK_ALL_READ: "/api/notifications/read-all",
     DELETE: "/api/notifications", // :id handled in service
+  },
+  HISTORY: {
+    TRACK: "/api/history/track", // :postId
+    PROGRESS: "/api/history/progress", // :postId
+    GET_ALL: "/api/history",
+    DELETE: "/api/history",
   },
 };

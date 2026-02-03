@@ -6,7 +6,6 @@ import {
   Headers,
   Req,
   Query,
-  Res,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -16,7 +15,6 @@ import { SignupDto } from './dto/signup.dto';
 import { SigninDto } from './dto/signin.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
-import type { Response } from 'express';
 import { Public } from '../common/decorators/public.decorator';
 import { RefreshTokenGuard } from './guards/refresh-token.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -47,17 +45,15 @@ export class AuthController {
     return this.authService.signin(dto, ip, userAgent);
   }
 
-  @UseGuards(JwtAuthGuard)
   @Post('logout')
   async logout(
     @Req() req: any,
-    @Res({ passthrough: true }) res: Response,
     @ClientIp() ip: string,
     @Headers('user-agent') userAgent: string,
   ) {
     return this.authService.logout(
-      req.user.id,
-      req.cookies.refreshToken,
+      req.user?.id,
+      req.cookies?.refreshToken,
       ip,
       userAgent,
     );

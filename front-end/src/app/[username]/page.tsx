@@ -18,6 +18,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import FollowUserButton from "@/components/shared/FollowUserButton";
+import LibraryListCard from "@/components/my-library/LibraryListCard";
 
 export default function UserProfilePage() {
   const params = useParams();
@@ -338,15 +339,17 @@ export default function UserProfilePage() {
           <div className="space-y-6">
             {lists.length > 0 ? (
               lists.map((list) => (
-                <div
+                <LibraryListCard
                   key={list.id}
-                  className="p-4 border rounded-lg hover:shadow-sm transition-shadow"
-                >
-                  <h3 className="font-bold text-lg">{list.name}</h3>
-                  <p className="text-sm text-gray-500">
-                    {list._count?.items || 0} stories
-                  </p>
-                </div>
+                  list={list}
+                  author={{
+                    name: profileUser.name,
+                    avatar: profileUser.avatar,
+                    username: profileUser.username,
+                  }}
+                  customLink={isOwnProfile ? `/me/library/${list.id}` : "#"}
+                  className={!isOwnProfile ? "cursor-default" : ""}
+                />
               ))
             ) : (
               <div className="py-10 text-center text-gray-500">
@@ -404,12 +407,6 @@ export default function UserProfilePage() {
   );
 
   if (authUser) {
-    // Even for auth user, we want this split layout.
-    // DashboardLayout puts us in a container. We just need to make sure we don't overflow *that* container improperly.
-    // Typically DashboardLayout is h-screen with a scrollable main area.
-    // If we want OUR inner parts to scroll independently, we need to stop the parent from scrolling.
-    // This might require `h-full` or explicit height.
-    // Let's try `h-[calc(100vh-4rem)]` assuming header is ~4rem.
     return <PageLayout />;
   }
 

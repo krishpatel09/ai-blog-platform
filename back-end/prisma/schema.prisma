@@ -30,6 +30,7 @@ model User {
   following       UserFollow[]       @relation("UserFollowing")
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent     Notification[] @relation("NotificationActor") 
+  readingHistory        ReadingHistory[]
 }
 
 model UserSecurity {
@@ -113,6 +114,7 @@ model Post {
   bookmarkItems BookmarkItem[]
   comments      Comment[]
   notifications Notification[]
+  readingHistory ReadingHistory[]
 
 
   @@index([userId])
@@ -129,6 +131,7 @@ model Post {
 model BookmarkList {
   id        String   @id @default(uuid())
   name      String   @db.VarChar(50)
+  isPrivate Boolean  @default(false)
   userId    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -144,6 +147,7 @@ model BookmarkItem {
   id         String   @id @default(uuid())
   listId     String
   postId     String
+  order      Int      @default(0)
   createdAt  DateTime @default(now())
 
   list       BookmarkList @relation(fields: [listId], references: [id], onDelete: Cascade)
@@ -226,6 +230,25 @@ model Notification {
 
   @@index([recipientId, createdAt])
   @@index([type])
+}
+
+// ==================== HISTORY MODELS ====================
+
+model ReadingHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  progress  Int      @default(0) // Percentage scrolled (0-100)
+  viewCount Int      @default(1) // Number of times visited
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Used to sort "Recently Read"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId]) // Prevent duplicate history entries for same user/post
+  @@index([userId])
+  @@index([updatedAt])
 }
 
 

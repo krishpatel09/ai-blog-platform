@@ -16,7 +16,6 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import NotificationService from "@/services/api/NotificationService";
 
 interface HeaderProps {
   isCollapsed: boolean;
@@ -30,24 +29,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
   const { showSuccess, showError, showLoading, dismiss } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
-
-  useEffect(() => {
-    if (user) {
-      fetchNotifications();
-    }
-  }, [user]);
-
-  const fetchNotifications = async () => {
-    try {
-      const data = await NotificationService.getAll();
-      console.log("Header: Notification Data:", data);
-      const unreadCount = data.filter((n: any) => !n.isRead).length;
-      console.log("Header: Unread Count:", unreadCount);
-      setNotificationCount(unreadCount);
-    } catch (error) {
-      console.error("Failed to fetch notifications", error);
-    }
-  };
 
   const { signOut } = useClerk();
 
