@@ -31,6 +31,7 @@ model User {
   notificationsReceived Notification[] @relation("NotificationRecipient")
   notificationsSent     Notification[] @relation("NotificationActor") 
   readingHistory        ReadingHistory[]
+  highlights            Highlight[]
 }
 
 model UserSecurity {
@@ -115,6 +116,7 @@ model Post {
   comments      Comment[]
   notifications Notification[]
   readingHistory ReadingHistory[]
+  highlights     Highlight[]
 
 
   @@index([userId])
@@ -175,6 +177,7 @@ model UserFollow {
 model Comment {
   id          String   @id @default(uuid())
   content     String   @db.VarChar(1000)
+  selectedText String? @db.Text
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   isDeleted Boolean @default(false)
@@ -249,6 +252,21 @@ model ReadingHistory {
   @@unique([userId, postId]) // Prevent duplicate history entries for same user/post
   @@index([userId])
   @@index([updatedAt])
+}
+
+model Highlight {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  content   String   @db.Text
+  quote     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
 }
 
 

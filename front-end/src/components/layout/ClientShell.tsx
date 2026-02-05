@@ -26,7 +26,12 @@ export default function ClientShell({
   // EXCEPT for specific full-screen routes if any (e.g. maybe specific preview pages?)
   // For now, consistent with user desire for persistent header/sidebar.
   // If user is logged in, wrap in DashboardLayout, unless it's a standalone page like /new-blog
-  if (user && pathname !== "/new-blog" && pathname !== "/import") {
+  if (
+    user &&
+    pathname !== "/new-blog" &&
+    pathname !== "/import" &&
+    !pathname?.startsWith("/edit/")
+  ) {
     // Check if the current page already handles its own layout?
     // Ideally we migrate all to use this shell.
     // DashboardLayout renders Header, Sidebar, RightSidebar.

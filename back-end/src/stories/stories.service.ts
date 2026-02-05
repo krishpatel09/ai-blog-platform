@@ -95,6 +95,48 @@ export class StoriesService {
     };
   }
 
+  async findById(id: string, userId: string) {
+    const story = await this.prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!story) {
+      throw new BadRequestException('Story not found');
+    }
+
+    if (story.userId !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to view this story',
+      );
+    }
+
+    return story;
+  }
+
+  async update(id: string, userId: string, updateData: any) {
+    const story = await this.prisma.post.findUnique({
+      where: { id },
+    });
+
+    if (!story) {
+      throw new BadRequestException('Story not found');
+    }
+
+    if (story.userId !== userId) {
+      throw new BadRequestException(
+        'You do not have permission to edit this story',
+      );
+    }
+
+    // Handle slug update if title changed? Ideally we keep slug consistent unless explicitly asked.
+    // For now, let's update everything passed.
+
+    return this.prisma.post.update({
+      where: { id },
+      data: updateData,
+    });
+  }
+
   async fetchExternalStory(url: string) {
     this.logger.log(`Initiating import for: ${url}`);
     let fallbackData: any = null;

@@ -51,4 +51,11 @@ export class CommentController {
     const userId = req.user.id;
     return this.commentService.deleteComment(userId, commentId);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('my-responses')
+  async getMyResponses(@Req() req) {
+    const userId = req.user.id;
+    return this.commentService.getUserResponses(userId);
+  }
 }

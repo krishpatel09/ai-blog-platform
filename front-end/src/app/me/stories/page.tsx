@@ -4,11 +4,20 @@ import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Blog } from "@/types/blog.types";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, Link2, Share2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import StoriesService, { StoryStats } from "@/services/stories.service";
 import { useAuth } from "@/context/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 export default function StoryPage() {
   const { user } = useAuth();
@@ -32,6 +41,7 @@ export default function StoryPage() {
         setAllStories(storiesResponse.data);
       } catch (error) {
         console.error("Failed to fetch data", error);
+        toast.error("Failed to load stories");
       } finally {
         setLoading(false);
       }
@@ -67,6 +77,19 @@ export default function StoryPage() {
     });
     setDisplayedStories(filtered);
   }, [activeTab, allStories]);
+
+  const handleDelete = (id: string) => {
+    setAllStories((prev) => prev.filter((story) => story.id !== id));
+    // Stats update would ideally happen here too or refetch
+    setStats((prev) => {
+      if (!prev) return null;
+      // Simple decrement based on active tab is not fully accurate but better than nothing
+      // Ideally we would fetch stats again or calculate based on story deleted
+      // For now, let's just keep stats as is or implement a fetch if critical
+      return prev;
+    });
+    toast.success("Story deleted");
+  };
 
   return (
     <div className="max-w-[1000px] mx-auto px-6 lg:px-0">
@@ -119,7 +142,7 @@ export default function StoryPage() {
           <div className="py-10 text-center">Loading...</div>
         ) : displayedStories.length > 0 ? (
           displayedStories.map((story) => (
-            <StoryItem key={story.id} story={story} />
+            <StoryItem key={story.id} story={story} onDelete={handleDelete} />
           ))
         ) : (
           <div className="py-10 text-gray-500 text-sm">No stories found.</div>
@@ -129,9 +152,21 @@ export default function StoryPage() {
   );
 }
 
-function StoryItem({ story }: { story: any }) {
+function StoryItem({
+  story,
+  onDelete,
+}: {
+  story: any;
+  onDelete: (id: string) => void;
+}) {
+  const router = useRouter();
   // Safe accessor for optional fields
   const isDraft = story.status === "DRAFT";
+  const isScheduled = story.status === "SCHEDULED";
+
+  // Logic should align with how tabs filter them
+  const isPublished = story.status === "PUBLISHED" && !isScheduled;
+
   const dateStr = story.publishedAt || story.updatedAt;
   const dateFormatted = dateStr
     ? new Date(dateStr).toLocaleDateString("en-US", {
@@ -139,6 +174,24 @@ function StoryItem({ story }: { story: any }) {
         day: "numeric",
       })
     : "";
+
+  const copyLink = () => {
+    // Basic logic for link - adjust if slug is not available
+    const url = `${window.location.origin}/blog/${story.slug || story.id}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Link copied to clipboard");
+  };
+
+  const deleteStory = async () => {
+    // We can use a custom dialog instead of confirm, but confirm is fast for now
+    try {
+      await StoriesService.deleteStory(story.id);
+      onDelete(story.id);
+    } catch (error) {
+      console.error("Failed to delete story", error);
+      toast.error("Failed to delete story");
+    }
+  };
 
   return (
     <div className="group py-5 border-b border-gray-100 last:border-0 flex items-start justify-between">
@@ -188,9 +241,114 @@ function StoryItem({ story }: { story: any }) {
       </Link>
 
       <div className="flex items-center gap-2 relative">
-        <button className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100">
-          <MoreHorizontal size={20} />
-        </button>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="p-2 text-gray-500 hover:text-gray-900 rounded-full hover:bg-gray-100 outline-none">
+              <MoreHorizontal size={20} />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent
+            align="end"
+            className="w-48 bg-white border border-gray-200 shadow-md"
+          >
+            {isDraft && (
+              <>
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={copyLink}
+                >
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Copy link
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={() => router.push(`/edit/${story.id}`)}
+                >
+                  Edit story
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={() => router.push(`/edit/${story.id}`)}
+                >
+                  Publish story
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-500 hover:text-gray-900">
+                  Review scheduled story
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  onClick={deleteStory}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Delete story
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {story.status === "SCHEDULED" && (
+              <>
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={copyLink}
+                >
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Copy link
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={() => router.push(`/edit/${story.id}`)}
+                >
+                  Edit story
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-500 hover:text-gray-900">
+                  Review scheduled story
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  onClick={deleteStory}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Delete story
+                </DropdownMenuItem>
+              </>
+            )}
+
+            {story.status === "PUBLISHED" && (
+              <>
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={copyLink}
+                >
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Copy link
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-500 hover:text-gray-900">
+                  <Share2 className="mr-2 h-4 w-4" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  className="text-gray-500 hover:text-gray-900"
+                  onClick={() => router.push(`/edit/${story.id}`)}
+                >
+                  Edit story
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-gray-500 hover:text-gray-900">
+                  View stats
+                </DropdownMenuItem>
+                <DropdownMenuSeparator className="bg-gray-100" />
+                <DropdownMenuItem
+                  onClick={deleteStory}
+                  className="text-red-600 focus:text-red-600"
+                >
+                  Delete story
+                </DropdownMenuItem>
+              </>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </div>
   );

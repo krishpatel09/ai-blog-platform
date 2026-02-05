@@ -30,6 +30,7 @@ export class NotificationService {
             select: {
               id: true,
               username: true,
+              name: true,
               avatar: true,
             },
           },

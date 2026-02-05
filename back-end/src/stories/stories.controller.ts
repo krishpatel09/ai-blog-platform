@@ -2,11 +2,12 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Query,
   Req,
+  Param,
   UseGuards,
-  BadRequestException,
 } from '@nestjs/common';
 import { StoriesService } from './stories.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -39,5 +40,19 @@ export class StoriesController {
       page ? +page : 1,
       limit ? +limit : 10,
     );
+  }
+
+  @Get(':id')
+  async getStoryById(@Req() req, @Param('id') id: string) {
+    return this.storiesService.findById(id, req.user.id);
+  }
+
+  @Put(':id')
+  async updateStory(
+    @Req() req,
+    @Param('id') id: string,
+    @Body() updateData: any,
+  ) {
+    return this.storiesService.update(id, req.user.id, updateData);
   }
 }

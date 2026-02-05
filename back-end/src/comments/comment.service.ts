@@ -20,7 +20,8 @@ export class CommentService {
   ) {}
 
   async createComment(userId: string, createCommentDto: CreateCommentDto) {
-    const { postId, content, parentId } = createCommentDto;
+    const { postId, content, parentId, selectedText } = createCommentDto;
+    console.log('selectedText', selectedText);
 
     const result = await this.prisma.$transaction(async (tx) => {
       const post = await tx.post.findUnique({
@@ -55,6 +56,7 @@ export class CommentService {
           userId,
           postId,
           parentId: parentId || null,
+          selectedText: selectedText || null,
         },
         include: {
           user: {
@@ -225,5 +227,38 @@ export class CommentService {
 
       return { message: 'Comment deleted successfully' };
     });
+  }
+
+  async getUserResponses(userId: string) {
+    const responses = await this.prisma.comment.findMany({
+      where: {
+        userId,
+      },
+      include: {
+        post: {
+          select: {
+            id: true,
+            title: true,
+            slug: true,
+            user: {
+              select: {
+                username: true,
+              },
+            },
+          },
+        },
+        user: {
+          select: {
+            name: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+
+    return responses;
   }
 }

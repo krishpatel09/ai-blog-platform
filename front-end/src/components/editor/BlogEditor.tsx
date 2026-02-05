@@ -11,6 +11,7 @@ interface BlogEditorProps {
   onChange?: (content: any) => void;
   initialContent?: any;
   coverImage: string | null;
+  onEditorReady?: (editor: any) => void;
 }
 
 const BlogEditor = ({
@@ -19,6 +20,7 @@ const BlogEditor = ({
   onChange,
   initialContent = "",
   coverImage,
+  onEditorReady,
 }: BlogEditorProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -44,11 +46,13 @@ const BlogEditor = ({
   });
 
   // Sync isReadOnly prop with editor editable state
+  // Sync isReadOnly prop with editor editable state
   useEffect(() => {
     if (editor) {
       editor.setEditable(!isReadOnly);
+      onEditorReady?.(editor);
     }
-  }, [editor, isReadOnly]);
+  }, [editor, isReadOnly, onEditorReady]);
 
   // Sync initialContent prop with editor content
   useEffect(() => {

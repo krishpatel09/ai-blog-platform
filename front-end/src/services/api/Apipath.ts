@@ -55,11 +55,15 @@ export const API_PATH = {
     GET_REPLIES: "/api/comments/replies/",
     DELETE: "/api/comments/delete/",
     LIKE: "/api/comments/like/",
+    GET_MY_RESPONSES: "/api/comments/my-responses",
   },
   STORIES: {
     GET_LIST: "/api/stories",
     GET_STATS: "/api/stories/stats",
+    GET_BY_ID: "/api/stories", // /:id appended in service
+    UPDATE: "/api/stories", // /:id appended in service
     IMPORT: "/api/stories/import",
+    DELETE: "/api/stories",
   },
   NOTIFICATIONS: {
     GET_ALL: "/api/notifications",
@@ -72,5 +76,10 @@ export const API_PATH = {
     PROGRESS: "/api/history/progress", // :postId
     GET_ALL: "/api/history",
     DELETE: "/api/history",
+  },
+  HIGHLIGHTS: {
+    CREATE: "/api/highlights",
+    GET_ALL: "/api/highlights",
+    DELETE: "/api/highlights",
   },
 };

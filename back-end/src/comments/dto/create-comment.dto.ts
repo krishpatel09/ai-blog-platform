@@ -12,4 +12,8 @@ export class CreateCommentDto {
   @IsUUID()
   @IsOptional()
   parentId?: string;
+
+  @IsString()
+  @IsOptional()
+  selectedText?: string;
 }

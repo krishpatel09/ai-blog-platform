@@ -13,7 +13,7 @@ export interface Comment {
     id: string;
     username: string;
     name: string;
-    profileImage?: string;
+    avatar?: string;
   };
   _count?: {
     replies: number;
@@ -22,12 +22,22 @@ export interface Comment {
   likes?: any[]; // To track if current user liked it
   replies?: Comment[]; // For nested structure if returned
   likeCount?: number; // Backend might return this directly updated
+  selectedText?: string | null;
+  post?: {
+    id: string;
+    title: string;
+    slug: string;
+    user: {
+      username: string;
+    };
+  };
 }
 
 export interface CreateCommentPayload {
   postId: string;
   content: string;
   parentId?: string;
+  selectedText?: string;
 }
 
 export const CommentService = {
@@ -43,7 +53,7 @@ export const CommentService = {
     const response = await axiosInstance.get(
       `${API_PATH.COMMENTS.GET_POST_COMMENTS}${postId}`,
     );
-    // Depending on backend, this might return { data: [...] } or just [...]
+    console.log("response.data", response.data);
     return response.data;
   },
 
@@ -63,5 +73,12 @@ export const CommentService = {
 
   deleteComment: async (commentId: string): Promise<void> => {
     await axiosInstance.delete(`${API_PATH.COMMENTS.DELETE}${commentId}`);
+  },
+
+  getMyResponses: async (): Promise<Comment[]> => {
+    const response = await axiosInstance.get(
+      API_PATH.COMMENTS.GET_MY_RESPONSES,
+    );
+    return response.data;
   },
 };

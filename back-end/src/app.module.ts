@@ -20,6 +20,7 @@ import { UserFollowModule } from './userFollow/userfollow.module';
 import { CommentModule } from './comments/comment.module';
 import { StoriesModule } from './stories/stories.module';
 import { HistoryModule } from './history/history.module';
+import { HighlightsModule } from './highlights/highlights.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { HistoryModule } from './history/history.module';
     CommentModule,
     StoriesModule,
     HistoryModule,
+    HighlightsModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

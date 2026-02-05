@@ -28,6 +28,7 @@ interface CommentsSidebarProps {
   isOpen: boolean;
   onClose: () => void;
   commentCount: number;
+  selectedText?: string;
 }
 
 export function CommentsSidebar({
@@ -35,6 +36,7 @@ export function CommentsSidebar({
   isOpen,
   onClose,
   commentCount,
+  selectedText,
 }: CommentsSidebarProps) {
   const [comments, setComments] = React.useState<Comment[]>([]);
   const [expandedComments, setExpandedComments] = React.useState<Set<string>>(
@@ -75,6 +77,7 @@ export function CommentsSidebar({
       const newComment = await CommentService.createComment({
         postId: blogId,
         content: comment,
+        selectedText: selectedText,
       });
       console.log("New comment:", newComment);
       setComments([newComment, ...comments]);
@@ -275,17 +278,24 @@ export function CommentsSidebar({
           {/* Input Area */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <Avatar className="h-10 w-10 bg-pink-600 text-white flex items-center justify-center font-medium">
-                {user?.avatar ? (
-                  <img src={user.avatar} alt="Avatar" />
-                ) : (
-                  user?.name?.charAt(0).toUpperCase()
-                )}
-              </Avatar>
+              <Avatar
+                className="h-10 w-10 bg-pink-600 text-white flex items-center justify-center font-medium"
+                name={user?.name}
+                src={user?.avatar}
+              />
               <span className="text-sm font-medium">{user?.name}</span>
             </div>
 
             <div className="bg-card/50 rounded-lg shadow-sm p-4 space-y-4 border border-border/50">
+              {selectedText && (
+                <div className="mb-2 pl-4 border-l-4 border-green-600">
+                  <p className="font-serif text-[15px] italic text-foreground/80 leading-relaxed">
+                    <span className="bg-green-100/50 box-decoration-clone py-0.5 px-1 rounded-sm">
+                      {selectedText}
+                    </span>
+                  </p>
+                </div>
+              )}
               <Textarea
                 placeholder="What are your thoughts?"
                 className="resize-none border-none focus-visible:ring-0 p-0 shadow-none min-h-[80px] text-base bg-transparent placeholder:text-muted-foreground/60"
@@ -339,7 +349,7 @@ export function CommentsSidebar({
                       <Avatar
                         className="h-10 w-10 flex items-center justify-center bg-gray-200"
                         name={comment.user?.name || "Anonymous"}
-                        src={comment.user?.profileImage}
+                        src={comment.user?.avatar}
                       />
                       <div className="flex flex-col leading-tight">
                         <div className="flex items-center gap-2">
@@ -378,6 +388,15 @@ export function CommentsSidebar({
                     </div>
                   </div>
 
+                  {comment.selectedText && (
+                    <div className="mb-3 pl-4 border-l-4 border-green-600">
+                      <p className="font-serif text-[15px] italic text-foreground/80 leading-relaxed">
+                        <span className="bg-green-100/50 box-decoration-clone py-0.5 px-1 rounded-sm">
+                          {comment.selectedText}
+                        </span>
+                      </p>
+                    </div>
+                  )}
                   <p className="text-[15px] text-foreground/90 leading-relaxed font-serif">
                     {comment.content}
                   </p>
@@ -468,7 +487,7 @@ export function CommentsSidebar({
                                 <Avatar
                                   className="h-6 w-6"
                                   name={reply.user?.name || "User"}
-                                  src={reply.user?.profileImage}
+                                  src={reply.user?.avatar}
                                 />
                                 <span className="text-xs font-medium">
                                   {reply.user?.name}

@@ -25,6 +25,28 @@ const StoriesService = {
     console.log(response.data);
     return response.data;
   },
+
+  deleteStory: async (id: string) => {
+    const response = await axiosInstance.delete(
+      `${API_PATH.STORIES.DELETE}/${id}`,
+    );
+    return response.data;
+  },
+
+  getStoryById: async (id: string) => {
+    const response = await axiosInstance.get(
+      `${API_PATH.STORIES.GET_BY_ID}/${id}`,
+    );
+    return response.data;
+  },
+
+  updateStory: async (id: string, data: any) => {
+    const response = await axiosInstance.put(
+      `${API_PATH.STORIES.UPDATE}/${id}`,
+      data,
+    );
+    return response.data;
+  },
 };
 
 export default StoriesService;

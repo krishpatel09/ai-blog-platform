@@ -20,10 +20,12 @@ export interface BookmarkItem {
 }
 
 class BookmarkService {
-  async createList(name: string): Promise<BookmarkList> {
+  async createList(name: string, isPrivate: boolean): Promise<BookmarkList> {
     const response = await axiosInstance.post(API_PATH.BOOKMARK.CREATE_LIST, {
       name,
+      isPrivate,
     });
+    console.log(response.data);
     return response.data;
   }
 

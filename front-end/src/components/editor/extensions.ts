@@ -6,6 +6,7 @@ import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import { CodeSandboxNode } from "./CodeSandboxNode";
 import Emoji from "@tiptap/extension-emoji";
+import Highlight from "@tiptap/extension-highlight";
 
 export const extensions = [
   StarterKit.configure({
@@ -64,4 +65,5 @@ export const extensions = [
       };
     },
   }),
+  Highlight.configure({ multicolor: true }),
 ];

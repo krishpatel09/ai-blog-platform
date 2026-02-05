@@ -194,7 +194,7 @@ export default function BlogCard({ blog, onRemove }: BlogCardProps) {
     if (!newListName.trim()) return;
     setIsCreatingList(true);
     try {
-      const newList = await BookmarkService.createList(newListName);
+      const newList = await BookmarkService.createList(newListName, false);
       setBookmarkLists([...bookmarkLists, newList]);
       setNewListName("");
       setShowCreateInput(false);

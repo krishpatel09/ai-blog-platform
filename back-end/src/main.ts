@@ -40,25 +40,8 @@ async function bootstrap() {
       transformOptions: { enableImplicitConversion: true },
     }),
   );
-  // app.useGlobalFilters(
-  //   new HttpExceptionFilter(),
-  //   new PrismaExceptionFilter()
-  // );
 
   app.useGlobalInterceptors(new CookieInterceptor(), new LoggingInterceptor());
-
-  // // --- 5. Swagger API Documentation ---
-  // if (process.env.NODE_ENV !== 'production') {
-  //   const config = new DocumentBuilder()
-  //     .setTitle('Genwrite AI Blog Platform')
-  //     .setDescription('The official API documentation for Genwrite AI platform')
-  //     .setVersion('1.0')
-  //     .addBearerAuth()
-  //     .build();
-  //   const document = SwaggerModule.createDocument(app, config);
-  //   SwaggerModule.setup('docs', app, document);
-  //   logger.log('🚀 Swagger documentation available at /docs');
-  // }
 
   await app.listen(process.env.PORT || 3000);
   console.log(

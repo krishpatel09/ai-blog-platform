@@ -6,7 +6,6 @@ import {
   Bookmark,
   Share2,
   MoreHorizontal,
-  PlayCircle,
   Heart,
   Link as LinkIcon,
   Send,
@@ -139,7 +138,7 @@ export default function BlogInteractionBar({ blog }: BlogInteractionBarProps) {
     if (!newListName.trim()) return;
     setIsCreatingList(true);
     try {
-      const newList = await BookmarkService.createList(newListName);
+      const newList = await BookmarkService.createList(newListName, isPrivate);
       setBookmarkLists([...bookmarkLists, newList]);
       setNewListName("");
       setShowCreateInput(false);
