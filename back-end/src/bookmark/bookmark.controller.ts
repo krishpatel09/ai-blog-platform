@@ -21,12 +21,15 @@ export class BookmarkController {
 
   @Post('create-list')
   createList(@Req() req, @Body() createBookmarkListDto: CreateBookmarkListDto) {
-    return this.bookmarkService.createList(req.user.id, createBookmarkListDto);
+    return this.bookmarkService.createList(
+      req.user.userId,
+      createBookmarkListDto,
+    );
   }
 
   @Get('get-lists')
   getLists(@Req() req) {
-    return this.bookmarkService.getLists(req.user.id);
+    return this.bookmarkService.getLists(req.user.userId);
   }
 
   @Public()
@@ -35,13 +38,13 @@ export class BookmarkController {
   getUserLists(@Param('username') username: string, @Req() req) {
     return this.bookmarkService.findPublicListsByUsername(
       username,
-      req.user?.id,
+      req.user?.userId,
     );
   }
 
   @Get('get-list-details/:id')
   getListDetails(@Req() req, @Param('id') id: string) {
-    return this.bookmarkService.getListDetails(req.user.id, id);
+    return this.bookmarkService.getListDetails(req.user.userId, id);
   }
 
   @Post('add-item/:id')
@@ -51,7 +54,7 @@ export class BookmarkController {
     @Body() addBookmarkItemDto: AddBookmarkItemDto,
   ) {
     return this.bookmarkService.addItem(
-      req.user.id,
+      req.user.userId,
       listId,
       addBookmarkItemDto,
     );
@@ -63,7 +66,7 @@ export class BookmarkController {
     @Param('id') listId: string,
     @Param('postId') postId: string,
   ) {
-    return this.bookmarkService.removeItem(req.user.id, listId, postId);
+    return this.bookmarkService.removeItem(req.user.userId, listId, postId);
   }
 
   @Post('update-list/:id') // Using Post for patch behavior if preferred, or Patch
@@ -72,12 +75,16 @@ export class BookmarkController {
     @Param('id') listId: string,
     @Body() updateListDto: { name?: string; isPrivate?: boolean },
   ) {
-    return this.bookmarkService.updateList(req.user.id, listId, updateListDto);
+    return this.bookmarkService.updateList(
+      req.user.userId,
+      listId,
+      updateListDto,
+    );
   }
 
   @Delete('delete-list/:id')
   deleteList(@Req() req, @Param('id') listId: string) {
-    return this.bookmarkService.deleteList(req.user.id, listId);
+    return this.bookmarkService.deleteList(req.user.userId, listId);
   }
 
   @Post('reorder-items/:id')
@@ -86,6 +93,10 @@ export class BookmarkController {
     @Param('id') listId: string,
     @Body() body: { postIds: string[] },
   ) {
-    return this.bookmarkService.reorderItems(req.user.id, listId, body.postIds);
+    return this.bookmarkService.reorderItems(
+      req.user.userId,
+      listId,
+      body.postIds,
+    );
   }
 }

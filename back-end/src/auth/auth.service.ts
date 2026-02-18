@@ -14,7 +14,6 @@ import { SigninDto } from './dto/signin.dto';
 import * as bcrypt from 'bcrypt';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { slugifyEmail } from '../utils/username.util';
-import { clerkClient } from '@clerk/clerk-sdk-node';
 
 @Injectable()
 export class AuthService {
@@ -106,6 +105,7 @@ export class AuthService {
     const { email, password, rememberMe } = signinDto;
 
     console.log('signinDto', signinDto);
+    // Trigger rebuild to ensure fresh client
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },

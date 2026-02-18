@@ -1,68 +1,71 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { signupSchema, type SignupInput } from '@/lib/zod/auth/auth.Schema'
-import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
-import AuthLayout from './Layout'
-import { Input } from '@/components/ui/input'
-import { Eye, EyeOff } from 'lucide-react'
-import axiosInstance from '@/services/api/axiosInstance'
-import { API_PATH } from '@/services/api/Apipath'
-import { ClerkSocialLogin } from './clerk-auth'
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { signupSchema, type SignupInput } from "@/lib/zod/auth/auth.Schema";
+import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
+import AuthLayout from "./Layout";
+import { Input } from "@/components/ui/input";
+import { Eye, EyeOff } from "lucide-react";
+import axiosInstance from "@/services/api/axiosInstance";
+import { API_PATH } from "@/services/api/Apipath";
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-  })
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [fieldErrors, setFieldErrors] = useState<Partial<Record<keyof SignupInput, string>>>({})
-  const router = useRouter()
-  const { showSuccess, showError } = useToast()
+    name: "",
+    email: "",
+    password: "",
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<keyof SignupInput, string>>
+  >({});
+  const router = useRouter();
+  const { showSuccess, showError } = useToast();
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setFieldErrors({})
+    e.preventDefault();
+    setLoading(true);
+    setFieldErrors({});
 
-    const result = signupSchema.safeParse(formData)
+    const result = signupSchema.safeParse(formData);
 
     if (!result.success) {
-      const errors: Partial<Record<keyof SignupInput, string>> = {}
+      const errors: Partial<Record<keyof SignupInput, string>> = {};
       result.error.issues.forEach((err) => {
-        const field = err.path[0] as keyof SignupInput
-        errors[field] = err.message
-      })
-      setFieldErrors(errors)
-      setLoading(false)
-      return
+        const field = err.path[0] as keyof SignupInput;
+        errors[field] = err.message;
+      });
+      setFieldErrors(errors);
+      setLoading(false);
+      return;
     }
 
     try {
       const response = await axiosInstance.post(API_PATH.AUTH.SIGNUP, {
         name: formData.name,
         email: formData.email,
-        password: formData.password
+        password: formData.password,
       });
       console.log("Sign-up response", response.data);
 
       if (response.status === 201 || response.data.success) {
-        showSuccess(response.data.message || 'Account created! Redirecting...');
-        router.push(`/verify-email?email=${encodeURIComponent(formData.email)}`);
+        showSuccess(response.data.message || "Account created! Redirecting...");
+        router.push(
+          `/verify-email?email=${encodeURIComponent(formData.email)}`,
+        );
       } else {
-        showError(response.data.message || 'Failed to create account');
+        showError(response.data.message || "Failed to create account");
       }
     } catch (error: any) {
-      console.error(error)
-      const errorMessage = error.response?.data?.message || error.message
-      showError(errorMessage)
+      console.error(error);
+      const errorMessage = error.response?.data?.message || error.message;
+      showError(errorMessage);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <AuthLayout>
@@ -76,13 +79,15 @@ export default function SignUp() {
             <span className="text-xl font-bold tracking-tight">Genwrite</span>
           </Link>
         </h2>
-
       </div>
 
       <form className="space-y-6" onSubmit={handleSignUp}>
         <div className="space-y-5">
           <div className="space-y-2">
-            <label htmlFor="name" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="name"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Name
             </label>
             <Input
@@ -93,20 +98,27 @@ export default function SignUp() {
               required
               value={formData.name}
               onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value })
-                if (fieldErrors.name) setFieldErrors({ ...fieldErrors, name: undefined })
+                setFormData({ ...formData, name: e.target.value });
+                if (fieldErrors.name)
+                  setFieldErrors({ ...fieldErrors, name: undefined });
               }}
-              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.name ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
+              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${
+                fieldErrors.name ? "border-red-500 focus:ring-red-500" : ""
+              }`}
               placeholder="Enter your Name"
             />
             {fieldErrors.name && (
-              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.name}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {fieldErrors.name}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="email"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Email Address
             </label>
             <Input
@@ -117,20 +129,27 @@ export default function SignUp() {
               required
               value={formData.email}
               onChange={(e) => {
-                setFormData({ ...formData, email: e.target.value })
-                if (fieldErrors.email) setFieldErrors({ ...fieldErrors, email: undefined })
+                setFormData({ ...formData, email: e.target.value });
+                if (fieldErrors.email)
+                  setFieldErrors({ ...fieldErrors, email: undefined });
               }}
-              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.email ? 'border-red-500 focus:ring-red-500' : ''
-                }`}
+              className={`h-12 rounded-lg border-gray-300 px-2 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${
+                fieldErrors.email ? "border-red-500 focus:ring-red-500" : ""
+              }`}
               placeholder="Enter your email"
             />
             {fieldErrors.email && (
-              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.email}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {fieldErrors.email}
+              </p>
             )}
           </div>
 
           <div className="space-y-2">
-            <label htmlFor="password" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="password"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Password
             </label>
             <div className="relative">
@@ -142,11 +161,15 @@ export default function SignUp() {
                 required
                 value={formData.password}
                 onChange={(e) => {
-                  setFormData({ ...formData, password: e.target.value })
-                  if (fieldErrors.password) setFieldErrors({ ...fieldErrors, password: undefined })
+                  setFormData({ ...formData, password: e.target.value });
+                  if (fieldErrors.password)
+                    setFieldErrors({ ...fieldErrors, password: undefined });
                 }}
-                className={`h-12 rounded-lg border-gray-300 px-2 pr-10 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${fieldErrors.password ? 'border-red-500 focus:ring-red-500' : ''
-                  }`}
+                className={`h-12 rounded-lg border-gray-300 px-2 pr-10 text-white focus:ring-black dark:bg-gray-900 dark:border-gray-700 dark:text-white [&:-webkit-autofill]:text-white! [&:-webkit-autofill]:[-webkit-text-fill-color:white] [&:-webkit-autofill]:transition-[background-color] [&:-webkit-autofill]:duration-[500000s] ${
+                  fieldErrors.password
+                    ? "border-red-500 focus:ring-red-500"
+                    : ""
+                }`}
                 placeholder="Enter your password"
               />
               <button
@@ -158,11 +181,11 @@ export default function SignUp() {
               </button>
             </div>
             {fieldErrors.password && (
-              <p className="text-sm text-red-600 dark:text-red-400">{fieldErrors.password}</p>
+              <p className="text-sm text-red-600 dark:text-red-400">
+                {fieldErrors.password}
+              </p>
             )}
           </div>
-
-
         </div>
 
         <button
@@ -170,7 +193,7 @@ export default function SignUp() {
           disabled={loading}
           className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-black focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-black disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          {loading ? 'Creating account...' : 'Sign Up'}
+          {loading ? "Creating account..." : "Sign Up"}
         </button>
 
         <div className="relative my-6">
@@ -178,20 +201,22 @@ export default function SignUp() {
             <div className="w-full border-t border-gray-200 dark:border-gray-800" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-4 bg-white dark:bg-gray-950 text-gray-500">Or continue with</span>
+            <span className="px-4 bg-white dark:bg-gray-950 text-gray-500">
+              Or continue with
+            </span>
           </div>
         </div>
       </form>
 
-      <ClerkSocialLogin />
-
       <div className="mt-8 text-center text-sm">
         <span className="text-gray-500">Already have an account? </span>
-        <Link href="/sign-in" className="font-medium text-blue-600 hover:text-blue-500">
+        <Link
+          href="/sign-in"
+          className="font-medium text-blue-600 hover:text-blue-500"
+        >
           Login
         </Link>
       </div>
     </AuthLayout>
-  )
+  );
 }
-

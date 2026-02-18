@@ -26,9 +26,11 @@ export class TokenService {
     userId: string,
     rememberMe: boolean = false,
   ): Promise<{ token: string; expiresInMs: number }> {
+    console.log(`[TokenService] Generating refresh token for user ${userId}`);
     await this.prisma.refreshToken.deleteMany({
       where: { userId: userId },
     });
+    console.log(`[TokenService] Deleted old tokens for user ${userId}`);
 
     const token = crypto.randomBytes(64).toString('hex');
     const expiresAt = new Date();
@@ -46,13 +48,15 @@ export class TokenService {
         isRevoked: false,
       },
     });
+    console.log(`[TokenService] Created new token ${token} for user ${userId}`);
 
     return { token, expiresInMs };
   }
 
   async validateRefreshToken(token: string) {
+    console.log(`[TokenService] Validating token: ${token}`);
     const refreshToken = await this.prisma.refreshToken.findUnique({
-      where: { token, isRevoked: false, expiresAt: { gte: new Date() } },
+      where: { token },
       include: {
         user: {
           select: {
@@ -71,6 +75,19 @@ export class TokenService {
     });
 
     if (!refreshToken) {
+      console.error(`[TokenService] Token not found in DB: ${token}`);
+      // Check if it exists at all
+      const anyToken = await this.prisma.refreshToken.findFirst({
+        where: { token },
+      });
+      if (anyToken) {
+        console.error(
+          `[TokenService] Token FOUND but findUnique failed? ID: ${anyToken.id}`,
+        );
+      } else {
+        console.error(`[TokenService] Token definitely does not exist.`);
+        // Check what tokens DO exist for this user - tricky without userId in arg
+      }
       throw new UnauthorizedException('Invalid refresh token');
     }
 

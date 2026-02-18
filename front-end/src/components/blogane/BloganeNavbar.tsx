@@ -142,7 +142,7 @@ export function BloganeNavbar() {
                 <div className="py-3 px-6">
                   <button
                     onClick={handleLogout}
-                    className="text-sm text-gray-700 hover:text-black block mb-1 w-full text-left"
+                    className="text-sm text-gray-700 hover:text-black block mb-1 w-full text-left cursor-pointer"
                   >
                     Sign out
                   </button>

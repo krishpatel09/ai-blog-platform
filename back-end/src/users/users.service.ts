@@ -1,8 +1,11 @@
 import {
+  Inject,
+  Logger,
   Injectable,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -12,24 +15,37 @@ import * as bcrypt from 'bcrypt';
 import { AuditService } from '../auth/services/audit.service';
 import { TokenService } from '../auth/services/token.service';
 import { EmailService } from '../auth/services/email.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
     private tokenService: TokenService,
     private emailService: EmailService,
+    private redisService: RedisService,
   ) {}
 
   //Get user profile
   async getProfile(userId: string) {
+    const cacheKey = `user_profile:${userId}`;
+    const cachedUser = await this.redisService.get(cacheKey);
+    if (cachedUser) {
+      return cachedUser;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true,
         username: true,
         email: true,
+        name: true,
+        bio: true,
+        avatar: true,
         isActive: true,
         createdAt: true,
         security: {
@@ -44,18 +60,30 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    return {
+    const userData = {
       id: user.id,
       username: user.username,
       email: user.email,
+      name: user.name,
+      bio: user.bio,
+      avatar: user.avatar,
       emailVerified: user.security?.emailVerified || false,
       isActive: user.isActive,
       createdAt: user.createdAt,
     };
+
+    await this.redisService.set(cacheKey, userData);
+    return userData;
   }
 
   // Get public profile by username
   async getPublicProfileByUsername(username: string) {
+    const cacheKey = `user_public_profile:${username}`;
+    const cachedUser = await this.redisService.get(cacheKey);
+    if (cachedUser) {
+      return cachedUser;
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { username },
       select: {
@@ -72,45 +100,77 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
+    await this.redisService.set(cacheKey, user);
     return user;
   }
 
   //Update profile
   async updateProfile(userId: string, dto: UpdateUserDto) {
-    const updateData: { username?: string; email?: string } = {};
+    const updateData: {
+      username?: string;
+      email?: string;
+      name?: string;
+      bio?: string;
+      avatar?: string;
+      pronouns?: string;
+    } = {};
 
-    if (dto.username !== undefined) {
-      updateData.username = dto.username;
-    }
+    if (dto.username !== undefined) updateData.username = dto.username;
+    if (dto.email !== undefined) updateData.email = dto.email;
+    if (dto.name !== undefined) updateData.name = dto.name;
+    if (dto.bio !== undefined) updateData.bio = dto.bio;
+    if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
 
-    if (dto.email !== undefined) {
-      updateData.email = dto.email;
-    }
-
-    const updatedUser = await this.prisma.user.update({
-      where: { id: userId },
-      data: updateData,
-      select: {
-        id: true,
-        username: true,
-        email: true,
-        security: {
-          select: {
-            emailVerified: true,
+    try {
+      const updatedUser = await this.prisma.user.update({
+        where: { id: userId },
+        data: updateData,
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          name: true,
+          bio: true,
+          avatar: true,
+          isActive: true,
+          createdAt: true,
+          security: {
+            select: {
+              emailVerified: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    return {
-      id: updatedUser.id,
-      username: updatedUser.username,
-      email: updatedUser.email,
-      emailVerified: updatedUser.security?.emailVerified || false,
-    };
+      const userData = {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        name: updatedUser.name,
+        bio: updatedUser.bio,
+        avatar: updatedUser.avatar,
+        emailVerified: updatedUser.security?.emailVerified || false,
+        isActive: updatedUser.isActive,
+        createdAt: updatedUser.createdAt,
+      };
+
+      // Invalidate caches
+      await this.redisService.del(`user_profile:${userId}`);
+      if (updatedUser.username) {
+        await this.redisService.del(
+          `user_public_profile:${updatedUser.username}`,
+        );
+      }
+
+      return userData;
+    } catch (error) {
+      if (error.code === 'P2002') {
+        throw new BadRequestException('Username already used.');
+      }
+      throw error;
+    }
   }
 
-  //Change password
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },

@@ -2,14 +2,22 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  Inject,
+  Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBookmarkListDto } from './dto/create-list.dto';
 import { AddBookmarkItemDto } from './dto/add-item.dto';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class BookmarkService {
-  constructor(private prisma: PrismaService) {}
+  private readonly logger = new Logger(BookmarkService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   async ensureDefaultListExists(userId: string) {
     return this.prisma.bookmarkList.upsert({
@@ -56,29 +64,47 @@ export class BookmarkService {
     }
     console.log('Creating list for user:', name);
 
-    return this.prisma.bookmarkList.create({
+    const result = await this.prisma.bookmarkList.create({
       data: {
         userId,
         name,
         isPrivate: isPrivate ?? false,
       },
     });
+
+    await this.redisService.del(`user_bookmark_lists:${userId}`);
+    return result;
   }
 
   //get lists
   async getLists(userId: string) {
+    const cacheKey = `user_bookmark_lists:${userId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     await this.ensureDefaultListExists(userId);
 
-    return this.prisma.bookmarkList.findMany({
+    const lists = await this.prisma.bookmarkList.findMany({
       where: { userId },
       include: this.getCommonIncludes(),
       orderBy: { createdAt: 'asc' },
     });
+
+    await this.redisService.set(cacheKey, lists);
+    return lists;
   }
 
   // Get public lists by username
   async findPublicListsByUsername(username: string, currentUserId?: string) {
     console.log('Finding public lists for user:', username);
+
+    // We only cache if it's purely public access (no currentUserId or currentUserId != target).
+    // If currentUserId is passed and matches, it's essentially my lists, which is covered by getLists logic usually,
+    // but this method is specific.
+    // Let's cache the public view broadly. `currentUserId` is mainly for "isOwner" check (to show private).
+    // If isOwner is true, we should probably not use the public cache or have a specific "owner" cache.
+    // Simpler: Cache the public lists for the username. Invalidating it when that user updates lists.
+
     const user = await this.prisma.user.findUnique({
       where: { username },
     });
@@ -88,14 +114,38 @@ export class BookmarkService {
     }
     const isOwner = currentUserId === user.id;
 
+    if (!isOwner) {
+      const cacheKey = `user_public_bookmark_lists:${username}`;
+      const cached = await this.redisService.get(cacheKey);
+      if (cached) return cached;
+
+      const lists = await this.prisma.bookmarkList.findMany({
+        where: { userId: user.id, isPrivate: false },
+        include: this.getCommonIncludes(),
+        orderBy: { createdAt: 'desc' },
+      });
+
+      await this.redisService.set(cacheKey, lists, 60 * 1000);
+      return lists;
+    }
+
     return this.prisma.bookmarkList.findMany({
-      where: { userId: user.id, ...(isOwner ? {} : { isPrivate: false }) },
+      where: { userId: user.id },
       include: this.getCommonIncludes(),
       orderBy: { createdAt: 'desc' },
     });
   }
 
   async getListDetails(userId: string, listId: string) {
+    const cacheKey = `bookmark_list_details:${listId}:${userId}`; // userId needed to verify owner/access potentially, but id is unique.
+    // Wait, getListDetails checks `userId` in `where` clause, so it implies only owner can see?
+    // Or is this for public viewing too? The service method signature takes `userId`.
+    // Looking at the code: `where: { id: listId, userId },`. This enforces ownership!
+    // So this is "Get My List Details".
+
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },
       include: {
@@ -131,6 +181,7 @@ export class BookmarkService {
       throw new NotFoundException('Bookmark list not found');
     }
 
+    await this.redisService.set(cacheKey, list, 60 * 1000);
     return list;
   }
 
@@ -147,7 +198,7 @@ export class BookmarkService {
       throw new NotFoundException('Bookmark list not found');
     }
 
-    return this.prisma.bookmarkList.update({
+    const result = await this.prisma.bookmarkList.update({
       where: { id: listId },
       data: {
         ...(updateListDto.name && { name: updateListDto.name }),
@@ -155,12 +206,24 @@ export class BookmarkService {
           isPrivate: updateListDto.isPrivate,
         }),
       },
+      include: { user: { select: { username: true } } },
     });
+
+    await Promise.all([
+      this.redisService.del(`user_bookmark_lists:${userId}`),
+      this.redisService.del(`bookmark_list_details:${listId}:${userId}`),
+      this.redisService.del(
+        `user_public_bookmark_lists:${result.user.username}`,
+      ),
+    ]);
+
+    return result;
   }
 
   async deleteList(userId: string, listId: string) {
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },
+      include: { user: { select: { username: true } } },
     });
 
     if (!list) {
@@ -173,9 +236,17 @@ export class BookmarkService {
       throw new ConflictException('Cannot delete the default Reading List');
     }
 
-    return this.prisma.bookmarkList.delete({
+    const result = await this.prisma.bookmarkList.delete({
       where: { id: listId },
     });
+
+    await Promise.all([
+      this.redisService.del(`user_bookmark_lists:${userId}`),
+      this.redisService.del(`bookmark_list_details:${listId}:${userId}`),
+      this.redisService.del(`user_public_bookmark_lists:${list.user.username}`),
+    ]);
+
+    return result;
   }
 
   async addItem(
@@ -191,6 +262,7 @@ export class BookmarkService {
           orderBy: { order: 'desc' },
           take: 1,
         },
+        user: { select: { username: true } },
       },
     });
 
@@ -215,18 +287,27 @@ export class BookmarkService {
     // Calculate next order
     const nextOrder = list.items.length > 0 ? list.items[0].order + 1 : 0;
 
-    return this.prisma.bookmarkItem.create({
+    const result = await this.prisma.bookmarkItem.create({
       data: {
         listId,
         postId: addItemDto.postId,
         order: nextOrder,
       },
     });
+
+    await Promise.all([
+      this.redisService.del(`user_bookmark_lists:${userId}`),
+      this.redisService.del(`bookmark_list_details:${listId}:${userId}`),
+      this.redisService.del(`user_public_bookmark_lists:${list.user.username}`),
+    ]);
+
+    return result;
   }
 
   async removeItem(userId: string, listId: string, postId: string) {
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },
+      include: { user: { select: { username: true } } },
     });
 
     if (!list) {
@@ -234,7 +315,7 @@ export class BookmarkService {
     }
 
     try {
-      return await this.prisma.bookmarkItem.delete({
+      const result = await this.prisma.bookmarkItem.delete({
         where: {
           listId_postId: {
             listId,
@@ -242,6 +323,16 @@ export class BookmarkService {
           },
         },
       });
+
+      await Promise.all([
+        this.redisService.del(`user_bookmark_lists:${userId}`),
+        this.redisService.del(`bookmark_list_details:${listId}:${userId}`),
+        this.redisService.del(
+          `user_public_bookmark_lists:${list.user.username}`,
+        ),
+      ]);
+
+      return result;
     } catch (error) {
       if (error.code === 'P2025') {
         throw new NotFoundException('Bookmark item not found in this list');
@@ -254,6 +345,7 @@ export class BookmarkService {
     // Verify list ownership
     const list = await this.prisma.bookmarkList.findUnique({
       where: { id: listId, userId },
+      include: { user: { select: { username: true } } },
     });
 
     if (!list) {
@@ -275,6 +367,14 @@ export class BookmarkService {
       }),
     );
 
-    return this.prisma.$transaction(updates);
+    const result = await this.prisma.$transaction(updates);
+
+    await Promise.all([
+      this.redisService.del(`user_bookmark_lists:${userId}`),
+      this.redisService.del(`bookmark_list_details:${listId}:${userId}`),
+      this.redisService.del(`user_public_bookmark_lists:${list.user.username}`),
+    ]);
+
+    return result;
   }
 }

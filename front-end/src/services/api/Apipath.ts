@@ -6,13 +6,13 @@ export const API_PATH = {
     LOGIN: "/api/auth/signin",
     LOGOUT: "/api/auth/logout",
     REFRESH_TOKEN: "/api/auth/refresh-token",
-    CLERK_VERIFY: "/api/auth/clerk-verify",
   },
   USERS: {
     GET_PROFILE: "/api/users/me",
     FORGOT_PASSWORD: "/api/users/forgot-password",
     RESET_PASSWORD: "/api/users/reset-password",
     GET_PUBLIC_PROFILE: "/api/users/@",
+    UPDATE_PROFILE: "/api/users/update-profile",
   },
   TAGS: {
     CREATE: "/api/tags",

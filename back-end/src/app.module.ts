@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
@@ -21,6 +22,7 @@ import { CommentModule } from './comments/comment.module';
 import { StoriesModule } from './stories/stories.module';
 import { HistoryModule } from './history/history.module';
 import { HighlightsModule } from './highlights/highlights.module';
+import { RedisModule } from './redis/redis.module';
 
 @Module({
   imports: [
@@ -28,6 +30,7 @@ import { HighlightsModule } from './highlights/highlights.module';
       isGlobal: true,
       load: [jwtConfig, refreshJwtConfig, databaseConfig, imagekitConfig],
     }),
+
     PrismaModule,
     AuthModule,
     TagsModule,
@@ -41,6 +44,7 @@ import { HighlightsModule } from './highlights/highlights.module';
     StoriesModule,
     HistoryModule,
     HighlightsModule,
+    RedisModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

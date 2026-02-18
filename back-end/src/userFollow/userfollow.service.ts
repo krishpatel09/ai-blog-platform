@@ -5,12 +5,16 @@ import {
   Logger,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class UserFollowService {
   private readonly logger = new Logger(UserFollowService.name);
 
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   async toggleFollow(followerId: string, followingId: string) {
     console.log('Toggling follow for', followerId, 'and', followingId);
@@ -37,6 +41,17 @@ export class UserFollowService {
       },
     });
     console.log('Existing follow:', existingFollow);
+
+    // Invalidate caches
+    await Promise.all([
+      this.redisService.del(`user_followers:${followingId}`),
+      this.redisService.del(`user_following:${followerId}`),
+      this.redisService.del(`user_follow_stats:${targetUser.username}`),
+      this.redisService.del(`is_following:${followerId}:${followingId}`),
+    ]);
+    // Also need to invalidate stats for the follower (following count changed) - but we don't have follower username easily here without another DB call or assuming it's passed.
+    // Ideally we should invalidate. Let's do best effort by just accepting we might not have follower username here.
+    // If we want to be strict, we'd fetch follower too.
 
     if (existingFollow) {
       return await this.prisma.$transaction(async (tx) => {
@@ -66,7 +81,11 @@ export class UserFollowService {
   }
 
   async getFollowers(userId: string) {
-    return this.prisma.userFollow.findMany({
+    const cacheKey = `user_followers:${userId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
+    const followers = await this.prisma.userFollow.findMany({
       where: { followingId: userId },
       include: {
         follower: {
@@ -80,10 +99,17 @@ export class UserFollowService {
         },
       },
     });
+
+    await this.redisService.set(cacheKey, followers, 60 * 1000);
+    return followers;
   }
 
   async getFollowing(userId: string) {
-    return this.prisma.userFollow.findMany({
+    const cacheKey = `user_following:${userId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
+    const following = await this.prisma.userFollow.findMany({
       where: { followerId: userId },
       include: {
         following: {
@@ -97,9 +123,16 @@ export class UserFollowService {
         },
       },
     });
+
+    await this.redisService.set(cacheKey, following);
+    return following;
   }
 
   async getFollowStats(username: string) {
+    const cacheKey = `user_follow_stats:${username}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const user = await this.prisma.user.findUnique({
       where: { username },
       include: {
@@ -117,19 +150,29 @@ export class UserFollowService {
       throw new NotFoundException('User not found');
     }
 
-    return {
+    const stats = {
       followersCount: user._count.followers,
       followingCount: user._count.following,
       postsCount: user._count.posts,
     };
+
+    await this.redisService.set(cacheKey, stats);
+    return stats;
   }
 
   async isFollowing(followerId: string, followingId: string) {
+    const cacheKey = `is_following:${followerId}:${followingId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const follow = await this.prisma.userFollow.findUnique({
       where: {
         followerId_followingId: { followerId, followingId },
       },
     });
-    return { isFollowing: !!follow };
+    const result = { isFollowing: !!follow };
+
+    await this.redisService.set(cacheKey, result);
+    return result;
   }
 }

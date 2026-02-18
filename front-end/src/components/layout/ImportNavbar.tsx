@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dropdown-menu";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useClerk } from "@clerk/nextjs";
 import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
 import Tokenservice from "@/services/api/Tokenservice";
@@ -20,7 +19,6 @@ import { useState } from "react";
 export default function ImportNavbar() {
   const { user } = useAuth();
   const router = useRouter();
-  const { signOut } = useClerk();
   const { showSuccess, showError, showLoading, dismiss } = useToast();
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -31,7 +29,6 @@ export default function ImportNavbar() {
 
     try {
       await axiosInstance.post(API_PATH.AUTH.LOGOUT);
-      await signOut();
       Tokenservice.removeUser();
       dismiss(toastId);
       showSuccess("Signed out successfully");

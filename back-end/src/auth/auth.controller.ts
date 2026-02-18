@@ -59,6 +59,7 @@ export class AuthController {
     );
   }
 
+  @Public()
   @UseGuards(RefreshTokenGuard)
   @Post('refresh-token')
   async refresh(@Req() req: any) {

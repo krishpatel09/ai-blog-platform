@@ -20,42 +20,42 @@ export class CommentController {
   @UseGuards(JwtAuthGuard)
   @Post('create')
   async createComment(@Body() createCommentDto: CreateCommentDto, @Req() req) {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     return this.commentService.createComment(userId, createCommentDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('like/:id')
   async toggleLike(@Req() req, @Param('id') id: string) {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     return this.commentService.toggleCommentLike(userId, id);
   }
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get('post/:postId')
   async getPostComments(@Param('postId') postId: string, @Req() req) {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     return this.commentService.getPostComments(userId, postId);
   }
 
   @UseGuards(OptionalJwtAuthGuard)
   @Get('replies/:id')
   async getReplies(@Param('id') commentId: string, @Req() req) {
-    const userId = req.user?.id;
+    const userId = req.user?.userId;
     return this.commentService.getReplies(userId, commentId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete('delete/:id')
   async deleteComment(@Param('id') commentId: string, @Req() req) {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     return this.commentService.deleteComment(userId, commentId);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('my-responses')
   async getMyResponses(@Req() req) {
-    const userId = req.user.id;
+    const userId = req.user.userId;
     return this.commentService.getUserResponses(userId);
   }
 }

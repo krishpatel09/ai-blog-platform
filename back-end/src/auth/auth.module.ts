@@ -10,7 +10,7 @@ import { EmailService } from './services/email.service';
 import { AuditService } from './services/audit.service';
 import { ConfigService } from '@nestjs/config';
 import { JwtModuleOptions } from '@nestjs/jwt';
-import { RefreshJwtStrategy } from './strategies/refresh-jwt.strategy';
+import { RefreshTokenGuard } from './guards/refresh-token.guard';
 
 @Module({
   imports: [
@@ -37,7 +37,7 @@ import { RefreshJwtStrategy } from './strategies/refresh-jwt.strategy';
     EmailService,
     AuditService,
     JwtStrategy,
-    RefreshJwtStrategy,
+    RefreshTokenGuard,
   ],
   exports: [TokenService, EmailService, AuditService],
 })

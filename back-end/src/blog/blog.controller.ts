@@ -28,6 +28,12 @@ export class BlogController {
     return this.blogService.findAllLive();
   }
 
+  @Public()
+  @Get('redis-test')
+  testRedis() {
+    return this.blogService.testRedisConnection();
+  }
+
   @Get('my-posts')
   getMyPosts(@Request() req) {
     return this.blogService.findUserPosts(req.user.userId);

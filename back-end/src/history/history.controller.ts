@@ -21,7 +21,7 @@ export class HistoryController {
 
   @Post('track/:postId')
   async trackPost(@Req() req, @Param('postId') postId: string) {
-    return this.historyService.upsertHistory(req.user.id, postId);
+    return this.historyService.upsertHistory(req.user.userId, postId);
   }
 
   @Patch('progress/:postId')
@@ -30,7 +30,11 @@ export class HistoryController {
     @Param('postId') postId: string,
     @Body('progress', ParseIntPipe) progress: number,
   ) {
-    return this.historyService.updateProgress(req.user.id, postId, progress);
+    return this.historyService.updateProgress(
+      req.user.userId,
+      postId,
+      progress,
+    );
   }
 
   @Get()
@@ -40,7 +44,7 @@ export class HistoryController {
     @Query('limit') limit: string = '10',
   ) {
     return this.historyService.getUserHistory(
-      req.user.id,
+      req.user.userId,
       parseInt(page),
       parseInt(limit),
     );
@@ -48,11 +52,11 @@ export class HistoryController {
 
   @Delete()
   async clearHistory(@Req() req) {
-    return this.historyService.clearAllHistory(req.user.id);
+    return this.historyService.clearAllHistory(req.user.userId);
   }
 
   @Delete(':postId')
   async deleteHistoryItem(@Req() req, @Param('postId') postId: string) {
-    return this.historyService.deleteHistoryItem(req.user.id, postId);
+    return this.historyService.deleteHistoryItem(req.user.userId, postId);
   }
 }

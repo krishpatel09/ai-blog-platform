@@ -58,6 +58,11 @@ axiosInstance.interceptors.response.use(
     }
 
     if (error.response?.status === 401 && !originalConfig._retry) {
+      // Skip refresh for login endpoint to avoid loops/false errors
+      if (originalConfig.url?.includes(API_PATH.AUTH.LOGIN)) {
+        return Promise.reject(error);
+      }
+
       console.log("[Axios] 401 detected, attempting refresh...");
 
       if (isRefreshing) {
@@ -78,11 +83,10 @@ axiosInstance.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        console.log("[Axios] Calling refresh endpoint...");
-        // We must use a generic axios instance or the same instance but ensure we don't loop.
-        // Since the refresh endpoint is properly excluded or we can rely on path check,
-        // strictly using 'withCredentials: true' is key.
-        // IMPORTANT: The path to refresh token must match the backend.
+        console.log(
+          `[Axios] Calling refresh endpoint: ${URL}${API_PATH.AUTH.REFRESH_TOKEN}`,
+        );
+
         const response = await axios.post(
           `${URL}${API_PATH.AUTH.REFRESH_TOKEN}`,
           {},
@@ -93,8 +97,6 @@ axiosInstance.interceptors.response.use(
 
         console.log("[Axios] Refresh response received:", response.status);
 
-        // EXTRACTION logic based on backend response structure:
-        // Backend returns: { success: true, data: { accessToken: "..." } }
         const accessToken = response.data?.data?.accessToken;
 
         if (!accessToken) {

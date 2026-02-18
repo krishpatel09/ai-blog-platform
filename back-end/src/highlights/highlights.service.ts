@@ -1,15 +1,19 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class HighlightsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private redisService: RedisService,
+  ) {}
 
   async create(
     userId: string,
     data: { postId: string; content: string; quote?: string },
   ) {
-    return this.prisma.highlight.create({
+    const result = await this.prisma.highlight.create({
       data: {
         userId,
         postId: data.postId,
@@ -34,10 +38,17 @@ export class HighlightsService {
         },
       },
     });
+
+    await this.redisService.del(`user_highlights:${userId}`);
+    return result;
   }
 
   async findAllByUser(userId: string) {
-    return this.prisma.highlight.findMany({
+    const cacheKey = `user_highlights:${userId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
+    const highlights = await this.prisma.highlight.findMany({
       where: { userId },
       include: {
         post: {
@@ -58,6 +69,9 @@ export class HighlightsService {
       },
       orderBy: { createdAt: 'desc' },
     });
+
+    await this.redisService.set(cacheKey, highlights);
+    return highlights;
   }
 
   async delete(userId: string, id: string) {
@@ -69,8 +83,11 @@ export class HighlightsService {
       throw new NotFoundException('Highlight not found');
     }
 
-    return this.prisma.highlight.delete({
+    const result = await this.prisma.highlight.delete({
       where: { id },
     });
+
+    await this.redisService.del(`user_highlights:${userId}`);
+    return result;
   }
 }

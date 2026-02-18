@@ -5,7 +5,6 @@ import axiosInstance from "@/services/api/axiosInstance";
 import { API_PATH } from "@/services/api/Apipath";
 import Tokenservice from "@/services/api/Tokenservice";
 import { useAuth } from "@/context/AuthContext";
-import { useClerk } from "@clerk/nextjs";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,8 +29,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [notificationCount, setNotificationCount] = useState(0);
 
-  const { signOut } = useClerk();
-
   const handleLogout = async () => {
     if (isLoggingOut) return;
 
@@ -40,7 +37,6 @@ export default function Header({ isCollapsed, onToggleCollapse }: HeaderProps) {
 
     try {
       await axiosInstance.post(API_PATH.AUTH.LOGOUT);
-      await signOut();
       Tokenservice.removeUser();
 
       dismiss(toastId);

@@ -3,12 +3,14 @@ import {
   Logger,
   NotFoundException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-comment.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { NotificationService } from '../notifications/notifications.service';
 import { NotificationType } from '@prisma/client';
+import { RedisService } from '../redis/redis.service';
 
 @Injectable()
 export class CommentService {
@@ -17,6 +19,7 @@ export class CommentService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notificationService: NotificationService,
+    private readonly redisService: RedisService,
   ) {}
 
   async createComment(userId: string, createCommentDto: CreateCommentDto) {
@@ -126,15 +129,21 @@ export class CommentService {
             commentId,
           },
         });
-        return tx.comment.update({
+        const result = await tx.comment.update({
           where: { id: commentId },
           data: { likeCount: { increment: 1 } },
         });
+
+        return result;
       }
     });
   }
 
   async getPostComments(userId: string, postId: string) {
+    const cacheKey = `post_comments:${postId}:${userId || 'anon'}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const comments = await this.prisma.comment.findMany({
       where: {
         postId,
@@ -161,10 +170,15 @@ export class CommentService {
       },
     });
 
+    await this.redisService.set(cacheKey, comments);
     return comments;
   }
 
   async getReplies(userId: string, commentId: string) {
+    const cacheKey = `comment_replies:${commentId}:${userId || 'anon'}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const replies = await this.prisma.comment.findMany({
       where: {
         parentId: commentId,
@@ -190,6 +204,7 @@ export class CommentService {
       },
     });
 
+    await this.redisService.set(cacheKey, replies);
     return replies;
   }
 
@@ -230,6 +245,10 @@ export class CommentService {
   }
 
   async getUserResponses(userId: string) {
+    const cacheKey = `user_responses:${userId}`;
+    const cached = await this.redisService.get(cacheKey);
+    if (cached) return cached;
+
     const responses = await this.prisma.comment.findMany({
       where: {
         userId,
@@ -259,6 +278,7 @@ export class CommentService {
       },
     });
 
+    await this.redisService.set(cacheKey, responses);
     return responses;
   }
 }

@@ -7,8 +7,17 @@ export interface PublicUser {
   name: string;
   avatar: string | null;
   bio: string | null;
+  email?: string; // Add email for private profile
   createdAt: string;
   isOwner?: boolean;
+}
+
+export interface UpdateUserDto {
+  username?: string;
+  name?: string;
+  bio?: string;
+  avatar?: string;
+  email?: string;
 }
 
 const UserService = {
@@ -21,6 +30,14 @@ const UserService = {
 
   getPrivateProfile: async (): Promise<PublicUser> => {
     const response = await axiosInstance.get(`${API_PATH.USERS.GET_PROFILE}`);
+    return response.data;
+  },
+
+  updateProfile: async (data: UpdateUserDto): Promise<PublicUser> => {
+    const response = await axiosInstance.patch(
+      `${API_PATH.USERS.UPDATE_PROFILE}`,
+      data,
+    );
     return response.data;
   },
 

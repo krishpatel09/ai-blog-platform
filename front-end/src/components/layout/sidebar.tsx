@@ -34,7 +34,7 @@ export default function Sidebar({ isCollapsed }: SidebarProps) {
     { name: "Library", icon: Bookmark, href: "/me/library" },
     { name: "Profile", icon: User, href: `/@${user?.username}` },
     { name: "Stories", icon: FileText, href: "/me/stories" },
-    { name: "Stats", icon: BarChart2, href: "/me/stats" },
+    // { name: "Stats", icon: BarChart2, href: "/me/stats" },
   ];
 
   return (
