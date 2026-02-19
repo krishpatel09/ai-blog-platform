@@ -33,6 +33,10 @@ async function bootstrap() {
     credentials: true,
   });
 
+  app.getHttpAdapter().get('/health', (req, res) => {
+    res.status(200).send('OK');
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

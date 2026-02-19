@@ -27,6 +27,12 @@ jobs:
         working-directory: back-end
         run: npx prisma generate
 
+      - name: Run Prisma Migrations
+        working-directory: back-end
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
       - name: Build backend
         working-directory: back-end
         run: npm run build
@@ -36,4 +42,4 @@ jobs:
         with:
           app-name: ai-blog-platform
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: back-end/dist
+          package: back-end

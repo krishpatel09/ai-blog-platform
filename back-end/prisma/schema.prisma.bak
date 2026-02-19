@@ -1,0 +1,292 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String   @db.VarChar(50)
+  username    String   @unique @db.VarChar(30)
+  email       String   @unique @db.VarChar(255)
+  avatar      String?  
+  bio         String?  @db.VarChar(160)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  security    UserSecurity?
+  tokens      RefreshToken[]
+  auditLogs   AuditLog[]
+  posts       Post[]
+  comments    Comment[]
+  bookmarkLists BookmarkList[]
+  CommentLikes CommentLike[]
+  followers       UserFollow[]       @relation("UserFollowers")
+  following       UserFollow[]       @relation("UserFollowing")
+  notificationsReceived Notification[] @relation("NotificationRecipient")
+  notificationsSent     Notification[] @relation("NotificationActor") 
+  readingHistory        ReadingHistory[]
+  highlights            Highlight[]
+}
+
+model UserSecurity {
+  id                       String    @id @default(uuid())
+  userId                   String    @unique
+  password                 String    @db.VarChar(255)
+  emailVerified           Boolean   @default(false)
+  emailVerificationToken  String?   @unique
+  emailVerificationExpires DateTime?
+  resetToken               String?   @unique
+  resetExpires             DateTime?
+
+  user                     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique @db.VarChar(128)
+  userId    String
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token, isRevoked]) 
+}
+
+model AuditLog {
+  id            String   @id @default(uuid())
+  userId        String?
+  action        String   @db.VarChar(50)
+  ipAddress     String?  @db.VarChar(45)
+  userAgent     String?  @db.VarChar(500)
+  success       Boolean  @default(true)
+  details       Json?    
+  createdAt     DateTime @default(now())
+
+  user          User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action, createdAt])
+}
+
+// ==================== BLOG MODELS ====================
+
+model Tag {
+  id        String   @id @default(uuid())
+  name      String   @unique @db.VarChar(30)
+  slug      String?   @unique @db.VarChar(40)
+  description String?  @db.VarChar(255)
+  createdAt DateTime @default(now())
+
+  @@index([slug, name])
+}
+
+model Post {
+  id            String      @id @default(uuid())
+  title         String      @db.VarChar(200)
+  slug          String      @unique @db.VarChar(250)
+  content       Json
+  excerpt       String?     @db.VarChar(300)
+  coverImage    String?
+  tags          String[]    @default([])
+  status        PostStatus  @default(DRAFT)
+  publishedAt   DateTime?
+  readTime      Int?
+  viewCount     Int         @default(0)
+  likeCount     Int         @default(0)
+  commentCount  Int         @default(0)
+  shareCount    Int         @default(0)
+  bookmarkCount Int         @default(0)
+  isFeatured    Boolean     @default(false)
+  allowComments Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  userId        String
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bookmarkItems BookmarkItem[]
+  comments      Comment[]
+  notifications Notification[]
+  readingHistory ReadingHistory[]
+  highlights     Highlight[]
+
+
+  @@index([userId])
+  @@index([slug])
+  @@index([status, publishedAt])
+  @@index([isFeatured, publishedAt])
+  @@index([tags])
+  @@index([publishedAt])
+}
+
+
+// ==================== INTERACTION MODELS ====================
+
+model BookmarkList {
+  id        String   @id @default(uuid())
+  name      String   @db.VarChar(50)
+  isPrivate Boolean  @default(false)
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     BookmarkItem[]
+
+  @@unique([userId, name]) 
+  @@index([userId])
+}
+
+model BookmarkItem {
+  id         String   @id @default(uuid())
+  listId     String
+  postId     String
+  order      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  list       BookmarkList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  post       Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([listId, postId]) 
+  @@index([listId])
+  @@index([postId])
+}
+
+model UserFollow {
+  id           String   @id @default(uuid())
+  followerId   String
+  followingId  String
+  createdAt    DateTime @default(now())
+
+  follower   User @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following  User @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId]) 
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Comment {
+  id          String   @id @default(uuid())
+  content     String   @db.VarChar(1000)
+  selectedText String? @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  isDeleted Boolean @default(false)
+
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  parentId    String?
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies     Comment[] @relation("CommentReplies")
+  likes       CommentLike[]
+  notifications Notification[]
+  likeCount   Int       @default(0)
+
+  @@index([postId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model CommentLike {
+  userId    String
+  commentId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@id([userId, commentId]) 
+  @@index([commentId])
+}
+
+model Notification {
+  id          String           @id @default(uuid())
+  recipientId String           
+  actorId     String?          
+  type        NotificationType
+  title     String   @db.VarChar(100)
+  message   String   @db.VarChar(255)
+  data      Json?
+  
+  postId      String?
+  commentId   String?
+  
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  recipient   User             @relation("NotificationRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  actor       User?            @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post        Post?            @relation(fields: [postId], references: [id], onDelete: Cascade)
+  comment     Comment?         @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([type])
+}
+
+// ==================== HISTORY MODELS ====================
+
+model ReadingHistory {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  progress  Int      @default(0) // Percentage scrolled (0-100)
+  viewCount Int      @default(1) // Number of times visited
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt // Used to sort "Recently Read"
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId]) // Prevent duplicate history entries for same user/post
+  @@index([userId])
+  @@index([updatedAt])
+}
+
+model Highlight {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  content   String   @db.Text
+  quote     String?  @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([postId])
+}
+
+
+
+
+// ==================== ENUMS ====================
+
+
+enum PostStatus {
+DRAFT
+PUBLISHED
+ARCHIVED
+SCHEDULED
+}
+
+
+enum NotificationType {
+  FOLLOW
+  POST_LIKE
+  NEW_POST
+  NEW_COMMENT
+  COMMENT_REPLY
+  SYSTEM  
+}
