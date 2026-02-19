@@ -39,7 +39,9 @@ export class AuthService {
     }
 
     //hash password
-    const usernameGenerate = await slugifyEmail(email);
+    // Generate unique username
+    const username = slugifyEmail(email);
+
     const hashedPassword = await bcrypt.hash(password, 10);
     const { token, expiresAt } =
       this.tokenService.generateEmailVerificationToken();
@@ -49,7 +51,7 @@ export class AuthService {
           const user = await tx.user.create({
             data: {
               name,
-              username: usernameGenerate,
+              username,
               email,
               isActive: true,
               security: {
