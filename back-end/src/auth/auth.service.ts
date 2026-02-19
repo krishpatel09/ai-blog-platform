@@ -105,7 +105,6 @@ export class AuthService {
     const { email, password, rememberMe } = signinDto;
 
     console.log('signinDto', signinDto);
-    // Trigger rebuild to ensure fresh client
     try {
       const user = await this.prisma.user.findUnique({
         where: { email },
