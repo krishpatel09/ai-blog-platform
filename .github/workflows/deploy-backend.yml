@@ -27,12 +27,6 @@ jobs:
         working-directory: back-end
         run: npx prisma generate
 
-      - name: Run Prisma Migrations
-        working-directory: back-end
-        run: npx prisma migrate deploy
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-
       - name: Build backend
         working-directory: back-end
         run: npm run build
