@@ -10,6 +10,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -22,6 +25,10 @@ jobs:
       - name: Install dependencies
         working-directory: back-end
         run: npm ci
+
+      - name: Sync Database Schema
+        working-directory: back-end
+        run: npx prisma db push --accept-data-loss
 
       - name: Generate Prisma Client
         working-directory: back-end
