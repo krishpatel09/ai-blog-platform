@@ -37,7 +37,6 @@ export class AiService {
     this.logger.log(`Starting blog generation for image: ${imageUrl}`);
 
     try {
-      /** STEP 1: FETCH IMAGE & CONVERT TO BASE64 */
       const imageResp = await fetch(imageUrl);
       if (!imageResp.ok)
         throw new Error(`Fetch failed: ${imageResp.statusText}`);
@@ -46,13 +45,14 @@ export class AiService {
       const base64Image = buffer.toString('base64');
       const mimeType = imageResp.headers.get('content-type') ?? 'image/jpeg';
 
-      /** STEP 2: MULTIMODAL VISION TASK */
       const visionResponse = await this.model.invoke([
         new HumanMessage({
           content: [
             {
               type: 'text',
-              text: 'Analyze this image in detail. Focus on the scene, mood, and potential story.',
+              text: `Analyze this image in detail as a creative director. 
+              Identify the core subject, the emotional atmosphere (mood), the color palette, and any interesting background details. 
+              Think about the "story" behind this image—what happened right before or what might happen next?`,
             },
             {
               type: 'image_url',
@@ -70,11 +70,22 @@ export class AiService {
         {
           role: 'system',
           content:
-            'You are a professional travel and tech blogger. Use the image description to create a structured blog post in HTML.',
+            'You are a world-class storyteller and professional blogger. ' +
+            'Your task is to transform an image description into a captivating, high-quality blog post. ' +
+            'The post should be engaging, insightful, and formatted with clean HTML. ' +
+            'Use a tone that is professional yet personal and inspiring.',
         },
         {
           role: 'user',
-          content: `IMAGE DESCRIPTION: ${imageDescription}`,
+          content: `IMAGE DESCRIPTION: ${imageDescription}
+          
+          Based on the description above, write a complete blog post. 
+          Include:
+          1. An attention-grabbing title.
+          2. A narrative introduction that sets the scene.
+          3. 2-3 body sections with clear headings (h2/h3) that explore themes, details, or stories suggested by the image.
+          4. A thought-provoking conclusion.
+          5. Relevant tags and a compelling SEO description.`,
         },
       ]);
 
@@ -88,7 +99,6 @@ export class AiService {
   private handleError(error: any) {
     this.logger.error('AiService Failure:', error.message);
 
-    // Specific mapping for common Gemini API errors
     if (error.status === 429) {
       throw new HttpException(
         'AI Quota exceeded. Please wait a minute.',
