@@ -7,28 +7,30 @@ import Redis from 'ioredis';
   providers: [
     {
       provide: 'REDIS_CLIENT',
-      useFactory: () => {
-        const redis = new Redis({
-          host: process.env.REDIS_HOST,
-          port: parseInt(process.env.REDIS_PORT || '1000'),
-          password: process.env.REDIS_PASSWORD,
-          tls: {
-            servername: process.env.REDIS_HOST,
-          },
-          family: 4,
-          connectTimeout: 10000,
+      useFactory: async () => {
+        if (!process.env.REDIS_URL) {
+          throw new Error('REDIS_URL is not defined in .env');
+        }
+
+        const redis = new Redis(process.env.REDIS_URL, {
           maxRetriesPerRequest: 3,
+          connectTimeout: 10000,
         });
+
         redis.on('connect', () => {
-          console.log('✅ Redis Connected Successfully');
+          console.log(' Redis Connected Successfully');
         });
+
         redis.on('error', (err) => {
-          console.error('❌ Redis Error:', err);
+          console.error('Redis Error:', err);
         });
-        redis
-          .ping()
-          .then((res) => console.log('PING Response:', res))
-          .catch((err) => console.error('Ping Failed:', err));
+
+        try {
+          const res = await redis.ping();
+          console.log('PING Response:', res);
+        } catch (err) {
+          console.error('Ping Failed:', err);
+        }
 
         return redis;
       },
