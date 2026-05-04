@@ -20,7 +20,7 @@ export class BlogController {
 
   @Post('create')
   create(@Request() req, @Body() createPostDto: CreatePostDto) {
-    return this.blogService.create(req.user.id, createPostDto);
+    return this.blogService.create(req.user.userId, createPostDto);
   }
 
   @Get('live')
