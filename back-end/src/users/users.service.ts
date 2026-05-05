@@ -46,6 +46,7 @@ export class UsersService {
         name: true,
         bio: true,
         avatar: true,
+        notifyOnFollow: true,
         isActive: true,
         createdAt: true,
         security: {
@@ -67,6 +68,7 @@ export class UsersService {
       name: user.name,
       bio: user.bio,
       avatar: user.avatar,
+      notifyOnFollow: user.notifyOnFollow,
       emailVerified: user.security?.emailVerified || false,
       isActive: user.isActive,
       createdAt: user.createdAt,
@@ -113,6 +115,7 @@ export class UsersService {
       bio?: string;
       avatar?: string;
       pronouns?: string;
+      notifyOnFollow?: boolean;
     } = {};
 
     if (dto.username !== undefined) updateData.username = dto.username;
@@ -120,6 +123,8 @@ export class UsersService {
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.bio !== undefined) updateData.bio = dto.bio;
     if (dto.avatar !== undefined) updateData.avatar = dto.avatar;
+    if (dto.notifyOnFollow !== undefined)
+      updateData.notifyOnFollow = dto.notifyOnFollow;
 
     try {
       const updatedUser = await this.prisma.user.update({
@@ -132,6 +137,7 @@ export class UsersService {
           name: true,
           bio: true,
           avatar: true,
+          notifyOnFollow: true,
           isActive: true,
           createdAt: true,
           security: {
@@ -149,6 +155,7 @@ export class UsersService {
         name: updatedUser.name,
         bio: updatedUser.bio,
         avatar: updatedUser.avatar,
+        notifyOnFollow: updatedUser.notifyOnFollow,
         emailVerified: updatedUser.security?.emailVerified || false,
         isActive: updatedUser.isActive,
         createdAt: updatedUser.createdAt,

@@ -10,6 +10,7 @@ export interface PublicUser {
   email?: string; // Add email for private profile
   createdAt: string;
   isOwner?: boolean;
+  notifyOnFollow?: boolean;
 }
 
 export interface UpdateUserDto {
@@ -18,6 +19,7 @@ export interface UpdateUserDto {
   bio?: string;
   avatar?: string;
   email?: string;
+  notifyOnFollow?: boolean;
 }
 
 const UserService = {
@@ -51,6 +53,14 @@ const UserService = {
   getFollowing: async (userId: string) => {
     const response = await axiosInstance.get(
       `${API_PATH.FOLLOW.GET_FOLLOWING}${userId}`,
+    );
+    return response.data;
+  },
+
+  changePassword: async (data: any) => {
+    const response = await axiosInstance.patch(
+      `${API_PATH.USERS.CHANGE_PASSWORD}`,
+      data,
     );
     return response.data;
   },

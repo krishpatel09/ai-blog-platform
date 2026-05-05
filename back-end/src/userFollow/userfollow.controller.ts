@@ -28,7 +28,11 @@ export class UserFollowController {
   @UseGuards(JwtAuthGuard)
   @Get('is-following/:targetId')
   async checkIsFollowing(@Param('targetId') targetId: string, @Req() req: any) {
-    return this.followService.isFollowing(req.user.id, targetId);
+    const currentUserId = req.user.id;
+    if (!currentUserId) {
+      throw new BadRequestException('User ID not found in request');
+    }
+    return this.followService.isFollowing(currentUserId, targetId);
   }
 
   @Public()

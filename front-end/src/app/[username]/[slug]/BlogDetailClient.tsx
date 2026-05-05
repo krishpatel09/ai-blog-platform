@@ -16,6 +16,7 @@ import { useReadingHistory } from "@/hooks/useReadingHistory";
 import HighlightMenu from "@/components/shared/HighlightMenu";
 import HighlightService from "@/services/highlight.service";
 import { ResponseSidebar } from "@/components/shared/ResponseSidebar";
+import WebAudioPlayer from "@/components/blog/WebAudioPlayer";
 
 export default function BlogDetailPage() {
   const params = useParams();
@@ -278,6 +279,15 @@ export default function BlogDetailPage() {
         </div>
       )}
 
+      {/* AI Audio Narrator */}
+      <WebAudioPlayer
+        title={blog.title}
+        content={
+          typeof blog.content === "string"
+            ? blog.content
+            : JSON.stringify(blog.content)
+        }
+      />
       {/* Content */}
       <div
         ref={contentRef}

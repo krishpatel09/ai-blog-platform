@@ -73,6 +73,19 @@ export class UserFollowService {
         data: { followerId, followingId },
       });
 
+      // Create notification if target user has it enabled
+      if (targetUser.notifyOnFollow) {
+        await tx.notification.create({
+          data: {
+            recipientId: followingId,
+            actorId: followerId,
+            type: 'FOLLOW',
+            title: 'New Follower',
+            message: 'Someone started following you',
+          },
+        });
+      }
+
       this.logger.log(
         `[UserFollowService] User ${followerId} followed ${followingId}`,
       );
@@ -161,6 +174,12 @@ export class UserFollowService {
   }
 
   async isFollowing(followerId: string, followingId: string) {
+    console.log('[UserFollowService] isFollowing check:', {
+      followerId,
+      followingId,
+    });
+    if (!followerId) return { isFollowing: false };
+
     const cacheKey = `is_following:${followerId}:${followingId}`;
     const cached = await this.redisService.get(cacheKey);
     if (cached) return cached;

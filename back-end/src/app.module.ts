@@ -23,6 +23,7 @@ import { StoriesModule } from './stories/stories.module';
 import { HistoryModule } from './history/history.module';
 import { HighlightsModule } from './highlights/highlights.module';
 import { RedisModule } from './redis/redis.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { RedisModule } from './redis/redis.module';
     HistoryModule,
     HighlightsModule,
     RedisModule,
+    NotificationsModule,
     ScheduleModule.forRoot(),
   ],
   controllers: [AppController],

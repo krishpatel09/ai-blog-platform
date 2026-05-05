@@ -30,6 +30,7 @@ model User {
   following             UserFollow[]     @relation("UserFollowing")
   followers             UserFollow[]     @relation("UserFollowers")
   security              UserSecurity?
+  notifyOnFollow        Boolean          @default(true)
 }
 
 model UserSecurity {
