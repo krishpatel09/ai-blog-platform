@@ -13,6 +13,7 @@ export const API_PATH = {
     RESET_PASSWORD: "/api/users/reset-password",
     GET_PUBLIC_PROFILE: "/api/users/@",
     UPDATE_PROFILE: "/api/users/update-profile",
+    CHANGE_PASSWORD: "/api/users/change-password",
   },
   TAGS: {
     CREATE: "/api/tags",
