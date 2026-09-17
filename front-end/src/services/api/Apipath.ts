@@ -83,4 +83,5 @@ export const API_PATH = {
     GET_ALL: "/api/highlights",
     DELETE: "/api/highlights",
   },
+  HEALTH: "/health",
 };
